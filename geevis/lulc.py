@@ -69,7 +69,6 @@ def check_plot_params(data, labels, palette):
             f"The following values are present in the data and undefined in the palette: {missing_palette}")
 
 
-# TODO: Add a parameter for normalizing areas for when classes above max_classes are removed.
 def plot_area(data, start_label, end_label, class_labels, class_palette, max_classes=5, normalize=True):
     """
     Generate a stacked area plot showing how the sampled area of cover changed from a start condition to an end
@@ -125,7 +124,7 @@ def plot_area(data, start_label, end_label, class_labels, class_palette, max_cla
     tick_loc = ax.get_xticks()
     ax.xaxis.set_major_locator(matplotlib.ticker.FixedLocator(tick_loc))
     # Set the tick labels
-    ax.xaxis.set_ticklabels(['Immediate', 'Delayed'])
+    ax.xaxis.set_ticklabels([start_label, end_label])
 
     handles, labels = ax.get_legend_handles_labels()
     # Reverse legend order
