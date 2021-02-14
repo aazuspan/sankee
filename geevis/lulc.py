@@ -53,7 +53,7 @@ def sample_change(start_img, end_img, band, region, n=100, scale=None):
     return data[["start", "end"]]
 
 
-def plot_param_check(data, labels, palette):
+def check_plot_params(data, labels, palette):
     """
     Check for values that are present in data and are not present in labels or palette and raise an error if any are
     found.
@@ -91,7 +91,7 @@ def plot_area(data, start_label, end_label, class_labels, class_palette, max_cla
         id_vars="index", var_name="label", value_name="n").fillna(0)
 
     # Check for missing values in labels or palette
-    plot_param_check(freq, class_labels, class_palette)
+    check_plot_params(freq, class_labels, class_palette)
 
     # Select the biggest classes to keep
     keep_classes = freq.groupby("index").n.sum().sort_values(ascending=False)[
@@ -105,16 +105,15 @@ def plot_area(data, start_label, end_label, class_labels, class_palette, max_cla
     plot_labels = [class_labels[i] for i in freq["index"]]
     plot_palette = [class_palette[i] for i in freq["index"]]
 
-    fig = plt.figure()
-    ax = fig.add_subplot()
+    fig, ax = plt.subplots()
     ax.stackplot(x, y, labels=plot_labels, colors=plot_palette)
-    # Hide background
-    ax.set_facecolor((0, 0, 0, 0))
-    # Hide grid
-    ax.grid(False)
+
+    # Hide plot frame
+    for spine in ax.spines.keys():
+        ax.spines[spine].set_visible(False)
     # Hide y-axis
     ax.yaxis.set_visible(False)
-
+    # Set tick font size
     plt.setp(ax.get_xticklabels(), fontsize=18)
 
     # This suppresses a warning about using non-fixed ticks
@@ -128,5 +127,6 @@ def plot_area(data, start_label, end_label, class_labels, class_palette, max_cla
     plt.legend(handles[::-1], labels[::-1],
                loc='center left', bbox_to_anchor=(1, 0.5),
                fontsize=16,
+               frameon=False
                )
     return fig
