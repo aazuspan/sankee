@@ -1,8 +1,10 @@
 import ee
 import pandas as pd
 import numpy as np
-from plotnine import *
-import plotnine
+import matplotlib.pyplot as plt
+import matplotlib
+
+from geevis import utils
 
 
 def sample_change(start_img, end_img, band, region, n=100, scale=None):
@@ -16,7 +18,7 @@ def sample_change(start_img, end_img, band, region, n=100, scale=None):
     :param ee.Geometry region: The region to sample.
     :param int n: The number of sample points to extract. More points will take longer to run but generate more
     representative cover statistics.
-    :param int scale: The scale to sample point statistics at. Generally, this should be the nominal scale of the 
+    :param int scale: The scale to sample point statistics at. Generally, this should be the nominal scale of the
     start and end image.
     :return pd.DataFrame: A dataframe in which each row represents as single sample point with the starting class
     in the "start" column and the ending class in the "end" column.
@@ -51,55 +53,80 @@ def sample_change(start_img, end_img, band, region, n=100, scale=None):
     return data[["start", "end"]]
 
 
-# TODO: Handle or raise specific error if there are values in the index that aren't listed in the labels or palette
+def plot_param_check(data, labels, palette):
+    """
+    Check for values that are present in data and are not present in labels or palette and raise an error if any are
+    found.
+    """
+    missing_labels = utils.get_missing_keys(data["index"], labels)
+    missing_palette = utils.get_missing_keys(data["index"], palette)
+
+    if missing_labels:
+        raise Exception(
+            f"The following values are present in the data and undefined in the labels: {missing_labels}")
+    if missing_palette:
+        raise Exception(
+            f"The following values are present in the data and undefined in the palette: {missing_palette}")
+
+
+# TODO: Add a parameter for normalizing areas for when classes above max_classes are removed.
 def plot_area(data, start_label, end_label, class_labels, class_palette, max_classes=5):
     """
-    Generate a stacked area plot showing how the sampled area of cover changed from a start condition to an end 
+    Generate a stacked area plot showing how the sampled area of cover changed from a start condition to an end
     condition.
 
     :param pd.DataFrame data: A dataframe in which each row represents as single sample point with the starting class
     in the "start" column and the ending class in the "end" column.
     :param str start_label: A label to describe the starting conditions, such as "prefire" or "2012".
     :param str end_label: A label to describe the ending conditions, sucsh as "postfire" or "2015".
-    :param dict class_labels: A dictionary where keys are the class index values and the values are corresponding 
+    :param dict class_labels: A dictionary where keys are the class index values and the values are corresponding
     labels. Every class index in the sample dataset must be included in class_labels.
-    :param dict class_palette: A dictionary where keys are the class index values and the values are corresponding 
+    :param dict class_palette: A dictionary where keys are the class index values and the values are corresponding
     colors. Every class index in the sample dataset must be included in class_palette.
     :param int max_classes: The maximum number of unique classes to include in the plot. If more classes are present,
-    the smallest classes will be omitted from the plot. 
+    the smallest classes will be omitted from the plot.
     """
     # Count the frequency of each class at the start and end
     freq = data.apply(pd.Series.value_counts).reset_index().melt(
         id_vars="index", var_name="label", value_name="n").fillna(0)
 
-    # Assign cover labels based on index values
-    freq["cover"] = [class_labels[i] for i in freq["index"]]
+    # Check for missing values in labels or palette
+    plot_param_check(freq, class_labels, class_palette)
 
     # Select the biggest classes to keep
-    keep_classes = freq.groupby("cover").n.sum().sort_values(ascending=False)[
-        0:max_classes].reset_index().cover.tolist()
+    keep_classes = freq.groupby("index").n.sum().sort_values(ascending=False)[
+        0:max_classes].reset_index()["index"].tolist()
     # Remove small classes
-    freq = freq[freq.cover.isin(keep_classes)]
+    freq = freq[freq["index"].isin(keep_classes)]
 
-    # Assign a numeric period for plotting start and end as a continuous scale
-    freq["period"] = np.where(freq.label.eq("start"), 0, 1)
+    x = ["start", "end"]
+    y = list(zip(*[freq[freq.label == label].n for label in x]))
 
-    # Use only the labels and colors that are present in the data
-    plot_labels = [v for v in class_labels.values() if v in list(freq.cover)]
-    plot_palette = [v for k, v in class_palette.items()
-                    if k in list(freq["index"])]
+    plot_labels = [class_labels[i] for i in freq["index"]]
+    plot_palette = [class_palette[i] for i in freq["index"]]
 
-    # Assign categorical labels for plotting
-    freq.cover = pd.Categorical(freq.cover, categories=plot_labels)
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.stackplot(x, y, labels=plot_labels, colors=plot_palette)
+    # Hide background
+    ax.set_facecolor((0, 0, 0, 0))
+    # Hide grid
+    ax.grid(False)
+    # Hide y-axis
+    ax.yaxis.set_visible(False)
 
-    return(ggplot(freq)
-           + aes(x='period', y='n', fill='cover')
-           + geom_area()
-           + plotnine.scales.scale_fill_manual(plot_palette)
-           + theme_void()
-           + theme(
-        legend_title=element_blank(),
-        axis_text_x=element_text()
-    )
-        + scale_x_continuous(breaks=(0, 1), labels=(start_label, end_label))
-    )
+    plt.setp(ax.get_xticklabels(), fontsize=18)
+
+    # This suppresses a warning about using non-fixed ticks
+    tick_loc = ax.get_xticks()
+    ax.xaxis.set_major_locator(matplotlib.ticker.FixedLocator(tick_loc))
+    # Set the tick labels
+    ax.xaxis.set_ticklabels(['Immediate', 'Delayed'])
+
+    handles, labels = ax.get_legend_handles_labels()
+    # Reverse legend order
+    plt.legend(handles[::-1], labels[::-1],
+               loc='center left', bbox_to_anchor=(1, 0.5),
+               fontsize=16,
+               )
+    return fig
