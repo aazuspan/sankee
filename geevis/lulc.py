@@ -69,6 +69,25 @@ def check_plot_params(data, labels, palette):
             f"The following values are present in the data and undefined in the palette: {missing_palette}")
 
 
+def remove_small_classes(data, max_classes, class_col):
+    """
+    Remove small classes until a maximum number of classes is reached. Class counts are cumulative regardless of groups.
+
+    :param pd.DataFrame data: A dataframe in which each row represents as single sample point with a class value.
+    :param int max_classes: The maximum number of unique classes to retain. If more classes are present, the smallest 
+    classes will be removed.
+    :param str class_col: The name of the column that defines the class values.
+    :return pd.DataFrame: A dataframe with rows that belong to the largest classes.
+    """
+    # Select the biggest classes to keep
+    keep_classes = data.groupby(class_col).n.sum().sort_values(ascending=False)[
+        0:max_classes].reset_index()[class_col].tolist()
+    # Remove small classes
+    data = data[data[class_col].isin(keep_classes)]
+
+    return data
+
+
 def plot_area(data, start_label, end_label, class_labels, class_palette, max_classes=5, normalize=True):
     """
     Generate a stacked area plot showing how the sampled area of cover changed from a start condition to an end
@@ -94,11 +113,8 @@ def plot_area(data, start_label, end_label, class_labels, class_palette, max_cla
     # Check for missing values in labels or palette
     check_plot_params(freq, class_labels, class_palette)
 
-    # Select the biggest classes to keep
-    keep_classes = freq.groupby("index").n.sum().sort_values(ascending=False)[
-        0:max_classes].reset_index()["index"].tolist()
-    # Remove small classes
-    freq = freq[freq["index"].isin(keep_classes)]
+    # Remove the smallest classes until max_classes is reached
+    freq = remove_small_classes(freq, max_classes, "index")
 
     if normalize:
         freq = utils.normalize_groups(freq, "label", "n")
