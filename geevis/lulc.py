@@ -70,7 +70,7 @@ def check_plot_params(data, labels, palette):
 
 
 # TODO: Add a parameter for normalizing areas for when classes above max_classes are removed.
-def plot_area(data, start_label, end_label, class_labels, class_palette, max_classes=5):
+def plot_area(data, start_label, end_label, class_labels, class_palette, max_classes=5, normalize=True):
     """
     Generate a stacked area plot showing how the sampled area of cover changed from a start condition to an end
     condition.
@@ -85,6 +85,8 @@ def plot_area(data, start_label, end_label, class_labels, class_palette, max_cla
     colors. Every class index in the sample dataset must be included in class_palette.
     :param int max_classes: The maximum number of unique classes to include in the plot. If more classes are present,
     the smallest classes will be omitted from the plot.
+    :param bool normalize: If true, the total area in each group will be normalized to 1. If classes are removed due
+    to fit max classes, this will rescale the remaining classes.
     """
     # Count the frequency of each class at the start and end
     freq = data.apply(pd.Series.value_counts).reset_index().melt(
@@ -98,6 +100,9 @@ def plot_area(data, start_label, end_label, class_labels, class_palette, max_cla
         0:max_classes].reset_index()["index"].tolist()
     # Remove small classes
     freq = freq[freq["index"].isin(keep_classes)]
+
+    if normalize:
+        freq = utils.normalize_groups(freq, "label", "n")
 
     x = ["start", "end"]
     y = list(zip(*[freq[freq.label == label].n for label in x]))
