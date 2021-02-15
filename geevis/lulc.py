@@ -85,23 +85,21 @@ def check_plot_params(data, labels, palette):
             f"The following values are present in the data and undefined in the palette: {missing_palette}")
 
 
-def remove_small_classes(data, max_classes, class_col):
+def drop_small_classes(data, max_classes):
     """
     Remove small classes until a maximum number of classes is reached. Class counts are cumulative regardless of groups.
 
-    :param pd.DataFrame data: A dataframe in which each row represents as single sample point with a class value.
+    :param pd.DataFrame data: A dataframe in which each row represents as single sample point and columns represent
+    the class of that point at various times.
     :param int max_classes: The maximum number of unique classes to retain. If more classes are present, the smallest
     classes will be removed.
-    :param str class_col: The name of the column that defines the class values.
     :return pd.DataFrame: A dataframe with rows that belong to the largest classes.
     """
-    # Select the biggest classes to keep
-    keep_classes = data.groupby(class_col).n.sum().sort_values(
-        ascending=False).reset_index()[0:max_classes][class_col].tolist()
-    # Remove small classes
-    data = data[data[class_col].isin(keep_classes)]
+    class_counts = data.melt().groupby("value").size().reset_index(name="n")
+    biggest_classes = class_counts.sort_values(
+        by="n", ascending=False).value[0:max_classes].tolist()
 
-    return data
+    return data[data.isin(biggest_classes)].dropna()
 
 
 def plot_area(data, start_label, end_label, dataset=None, class_labels=None, class_palette=None, max_classes=5, exclude=None, normalize=True):
@@ -136,6 +134,8 @@ def plot_area(data, start_label, end_label, dataset=None, class_labels=None, cla
         class_labels = dataset.labels
         class_palette = dataset.palette
 
+    data = drop_small_classes(data, max_classes)
+
     # Count the frequency of each class at the start and end
     freq = data.apply(pd.Series.value_counts).reset_index().melt(
         id_vars="index", var_name="label", value_name="n").fillna(0)
@@ -145,9 +145,6 @@ def plot_area(data, start_label, end_label, dataset=None, class_labels=None, cla
 
     # Check for missing values in labels or palette
     check_plot_params(freq, class_labels, class_palette)
-
-    # Remove the smallest classes until max_classes is reached
-    freq = remove_small_classes(freq, max_classes, "index")
 
     if normalize:
         freq = utils.normalize_groups(freq, "label", "n")
