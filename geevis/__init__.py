@@ -1,2 +1,1 @@
-import geevis.palette
-import geevis.label
+import geevis.datasets
