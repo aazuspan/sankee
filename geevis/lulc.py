@@ -7,7 +7,7 @@ import matplotlib
 from geevis import utils
 
 
-def sample_change(start_img, end_img, band, region, n=100, scale=None):
+def sample_change(start_img, end_img, band, region, n=100, scale=None, seed=0, dropna=True):
     """
     Randomly sample values of two images to quantify change over time.
 
@@ -20,6 +20,9 @@ def sample_change(start_img, end_img, band, region, n=100, scale=None):
     representative cover statistics.
     :param int scale: The scale to sample point statistics at. Generally, this should be the nominal scale of the
     start and end image.
+    :param int seed: Random seed used to generate sample points.
+    :param bool dropna: If true, samples with no class data in either image will be dropped. If false, these samples
+    will be returned but may cause plotting to fail.
     :return pd.DataFrame: A dataframe in which each row represents as single sample point with the starting class
     in the "start" column and the ending class in the "end" column.
     """
@@ -28,7 +31,7 @@ def sample_change(start_img, end_img, band, region, n=100, scale=None):
     end_img = end_img.set({"label": "end"})
     images = ee.ImageCollection.fromImages([start_img, end_img])
 
-    samples = ee.FeatureCollection.randomPoints(region, n)
+    samples = ee.FeatureCollection.randomPoints(region, n, seed)
 
     def extract_values(point):
         # Set the location to extract values at
@@ -49,6 +52,9 @@ def sample_change(start_img, end_img, band, region, n=100, scale=None):
 
     data = pd.DataFrame.from_dict(
         [feat["properties"] for feat in ee.Feature(sample_data).getInfo()["features"]])
+
+    if dropna:
+        data = data.dropna()
 
     return data[["start", "end"]]
 
@@ -80,8 +86,8 @@ def remove_small_classes(data, max_classes, class_col):
     :return pd.DataFrame: A dataframe with rows that belong to the largest classes.
     """
     # Select the biggest classes to keep
-    keep_classes = data.groupby(class_col).n.sum().sort_values(ascending=False)[
-        0:max_classes].reset_index()[class_col].tolist()
+    keep_classes = data.groupby(class_col).n.sum().sort_values(
+        ascending=False).reset_index()[0:max_classes][class_col].tolist()
     # Remove small classes
     data = data[data[class_col].isin(keep_classes)]
 
