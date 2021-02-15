@@ -105,6 +105,24 @@ def drop_classes(data, max_classes, metric="area"):
     return dropped_data
 
 
+def parse_dataset(dataset, labels, palette):
+    """
+    Take a dataset, labels, and palette and check that enough parameters are defined to generate a graph. Raise an error
+    if too few parameters or too many parameters are defined. Otherwise, return the labels and palette.
+    """
+    if dataset is None and any([x is None for x in [labels, palette]]):
+        raise ValueError(
+            "Provide either a dataset or class labels and a class palette.")
+    elif dataset is not None and any([x is not None for x in [labels, palette]]):
+        raise ValueError(
+            "Provide only a dataset or class labels and a class palette, not both.")
+    elif dataset:
+        labels = dataset.labels
+        palette = dataset.palette
+
+    return labels, palette
+
+
 def plot_area(data, start_label, end_label, dataset=None, class_labels=None, class_palette=None, max_classes=5, exclude=None, normalize=True):
     """
     Generate a stacked area plot showing how the sampled area of cover changed from a start condition to an end
@@ -127,15 +145,8 @@ def plot_area(data, start_label, end_label, dataset=None, class_labels=None, cla
     :param bool normalize: If true, the total area in each group will be normalized to 1. If classes are removed due
     to fit max classes, this will rescale the remaining classes.
     """
-    if dataset is None and any([x is None for x in [class_labels, class_palette]]):
-        raise ValueError(
-            "Provide either a dataset or class labels and a class palette.")
-    elif dataset is not None and any([x is not None for x in [class_labels, class_palette]]):
-        raise ValueError(
-            "Provide only a dataset or class labels and a class palette, not both.")
-    elif dataset:
-        class_labels = dataset.labels
-        class_palette = dataset.palette
+    class_labels, class_palette = parse_dataset(
+        dataset, class_labels, class_palette)
 
     if exclude:
         data = data[~data.isin(exclude)].dropna()
@@ -207,15 +218,8 @@ def plot_sankey(data, start_label, end_label, dataset=None, class_labels=None, c
     :param bool normalize: If true, the total area in each group will be normalized to 1. If classes are removed due
     to fit max classes, this will rescale the remaining classes.
     """
-    if dataset is None and any([x is None for x in [class_labels, class_palette]]):
-        raise ValueError(
-            "Provide either a dataset or class labels and a class palette.")
-    elif dataset is not None and any([x is not None for x in [class_labels, class_palette]]):
-        raise ValueError(
-            "Provide only a dataset or class labels and a class palette, not both.")
-    elif dataset:
-        class_labels = dataset.labels
-        class_palette = dataset.palette
+    class_labels, class_palette = parse_dataset(
+        dataset, class_labels, class_palette)
 
     if exclude:
         data = data[~data.isin(exclude)].dropna()
