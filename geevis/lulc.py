@@ -196,15 +196,15 @@ def plot_area(data, start_label, end_label, dataset=None, class_labels=None, cla
     return fig
 
 
-def plot_sankey(data, start_label, end_label, dataset=None, class_labels=None, class_palette=None, max_classes=5, title=None, exclude=None):
+def plot_sankey(data, start_label=None, end_label=None, dataset=None, class_labels=None, class_palette=None, max_classes=5, title=None, exclude=None):
     """
     Generate a stacked area plot showing how the sampled area of cover changed from a start condition to an end
     condition.
 
     :param pd.DataFrame data: A dataframe in which each row represents as single sample point with the starting class
     in the "start" column and the ending class in the "end" column.
-    :param str start_label: A label to describe the starting conditions, such as "prefire" or "2012".
-    :param str end_label: A label to describe the ending conditions, sucsh as "postfire" or "2015".
+    :param str start_label: An optional label to describe the starting conditions, such as "prefire" or "2012".
+    :param str end_label: An optional label to describe the ending conditions, sucsh as "postfire" or "2015".
     :param geevis.dataset.Dataset dataset: A dataset from which the class data was generated, containing labels and
     palettes corresponding to class values. If a dataset is not provided, class labels and a class palette must be
     provided instead.
@@ -245,12 +245,23 @@ def plot_sankey(data, start_label, end_label, dataset=None, class_labels=None, c
     # You only need one color for each source class
     sankey_colors = [class_palette[i] for i in sankey_data.start]
 
+    if start_label and end_label:
+        # Create labels for the nodes
+        node_labels = [start_label] * \
+            len(unique_labels) + [end_label] * len(unique_labels)
+    else:
+        node_labels = None
+
     fig = go.Figure(data=[go.Sankey(
         arrangement="snap",
         node=dict(
             line=dict(color="black", width=0.5),
             label=sankey_labels,
-            color=[class_palette[i] for i in unique_labels] * 2
+            color=[class_palette[i] for i in unique_labels] * 2,
+            customdata=node_labels,
+            hoverinfo=None,
+            # If a start and end label were provided, label the nodes
+            hovertemplate='%{label} (%{customdata})<extra></extra>' if node_labels else '%{label}<extra></extra>'
         ),
         link=dict(
             # These values refer to the index of the labels
@@ -258,7 +269,7 @@ def plot_sankey(data, start_label, end_label, dataset=None, class_labels=None, c
             target=sankey_data.end_index,
             value=sankey_data.n * 100,
             color=sankey_colors,
-            hovertemplate='%{value}% of %{source.label} became %{target.label}'
+            hovertemplate='%{value}% of <i>%{source.label}</i> became <i>%{target.label}</i><extra></extra>'
         ))])
 
     if title:
