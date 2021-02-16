@@ -196,7 +196,7 @@ def plot_area(data, start_label, end_label, dataset=None, class_labels=None, cla
     return fig
 
 
-def plot_sankey(data, start_label, end_label, dataset=None, class_labels=None, class_palette=None, max_classes=5, exclude=None, normalize=True):
+def plot_sankey(data, start_label, end_label, dataset=None, class_labels=None, class_palette=None, max_classes=5, title=None, exclude=None):
     """
     Generate a stacked area plot showing how the sampled area of cover changed from a start condition to an end
     condition.
@@ -215,8 +215,6 @@ def plot_sankey(data, start_label, end_label, dataset=None, class_labels=None, c
     :param int max_classes: The maximum number of unique classes to include in the plot. If more classes are present,
     the unimportant classes will be omitted from the plot.
     :param list exclude: A list of class values to remove from the plot.
-    :param bool normalize: If true, the total area in each group will be normalized to 1. If classes are removed due
-    to fit max classes, this will rescale the remaining classes.
     """
     class_labels, class_palette = parse_dataset(
         dataset, class_labels, class_palette)
@@ -231,6 +229,8 @@ def plot_sankey(data, start_label, end_label, dataset=None, class_labels=None, c
 
     # Transform the data to get counts of each combination of start and end condition
     sankey_data = data.groupby(["start", "end"]).size().reset_index(name="n")
+
+    sankey_data = utils.normalize_groups(sankey_data, "start", "n")
 
     # Create an index to refer to the start class
     sankey_data["start_index"] = sankey_data.start.apply(
@@ -256,9 +256,13 @@ def plot_sankey(data, start_label, end_label, dataset=None, class_labels=None, c
             # These values refer to the index of the labels
             source=sankey_data.start_index,
             target=sankey_data.end_index,
-            value=sankey_data.n,
+            value=sankey_data.n * 100,
             color=sankey_colors,
-            hovertemplate='%{value}% changed from %{source.label} to %{target.label}'
+            hovertemplate='%{value}% of %{source.label} became %{target.label}'
         ))])
+
+    if title:
+        fig.update_layout(
+            title_text=f"<b>{title}</b>", font_size=14, title_x=0.5)
 
     return fig
