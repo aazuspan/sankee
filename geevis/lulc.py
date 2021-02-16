@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from geevis import utils
 
 
-def sample_change(start_img, end_img, region, dataset=None, band=None, n=100, scale=None, seed=0, dropna=True):
+def sample_change(start_img, end_img, region, dataset=None, band=None, n=100, scale=30, seed=0, dropna=True):
     """
     Randomly sample values of two images to quantify change over time.
 
@@ -254,8 +254,11 @@ def plot_sankey(data, start_label=None, end_label=None, dataset=None, class_labe
 
     fig = go.Figure(data=[go.Sankey(
         arrangement="snap",
+        textfont=dict(
+            size=12,
+        ),
         node=dict(
-            line=dict(color="black", width=0.5),
+            line=dict(color="black", width=2),
             label=sankey_labels,
             color=[class_palette[i] for i in unique_labels] * 2,
             customdata=node_labels,
@@ -274,6 +277,10 @@ def plot_sankey(data, start_label=None, end_label=None, dataset=None, class_labe
 
     if title:
         fig.update_layout(
-            title_text=f"<b>{title}</b>", font_size=14, title_x=0.5)
+            title_text=f"<b>{title}</b>",
+            font_size=14,
+            title_x=0.5,
+            template="seaborn"
+        )
 
     return fig
