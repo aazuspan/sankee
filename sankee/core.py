@@ -186,12 +186,6 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
         target += sankified.target.tolist()
         value += sankified.value.tolist()
 
-        print(source)
-        print(source_labels)
-        print(target)
-        print(target_labels)
-        # return sankified
-
     # Store the column label for the final target data
     node_labels += [end_label for i in range(len(pd.unique(sankified.target)))]
     node_palette = [dataset.get_color(l) for l in label]
