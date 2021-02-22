@@ -1,3 +1,6 @@
+# TODO: Add a function to expose all available datasets
+# TODO: Add a function to check that all keys match between labels and palette
+# TODO: Add a function to return all keys for the dataset
 class Dataset:
     def __init__(self, band, labels, palette):
         """
@@ -11,6 +14,13 @@ class Dataset:
 
     def __repr__(self):
         return self.band
+
+    def get_color(self, label):
+        """
+        Take a label and return the associated color from the palette.
+        """
+        label_key = [k for k, v in self.labels.items() if v == label][0]
+        return self.palette[label_key]
 
 
 nlcd2016 = Dataset(
