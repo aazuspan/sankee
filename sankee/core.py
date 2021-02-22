@@ -24,9 +24,9 @@ def sankify_data(data, dataset, start_index=0):
     # Generate a unique index for each source and target
     sankey_data["source"] = sankey_data[column_list[0]].apply(
         lambda x: unique_source.index(x) + start_index)
-    # Offset the target IDs by the number of source classes to prevent overlap with source IDs
+    # Offset the target IDs by the last source class to prevent overlap with source IDs
     sankey_data["target"] = sankey_data[column_list[1]].apply(
-        lambda x: unique_target.index(x) + start_index + sankey_data.source.max() + 1)
+        lambda x: unique_target.index(x) + sankey_data.source.max() + 1)
 
     # Assign labels to each source and target
     sankey_data["source_label"] = sankey_data[column_list[0]].apply(
@@ -156,9 +156,9 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
 
         sankified = sankify_data(
             group_data, dataset, start_index=current_index)
-        # The start condition of the next column group will be the end condition of this column group. This sets the index
+        # The start index of the next column group will be the end index of this column group. This sets the index
         # offset to achieve that.
-        current_index += len(sankified) // 2
+        current_index = sankified.target.min()
 
         start_label = group_data.columns[0]
         end_label = group_data.columns[1]
