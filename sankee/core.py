@@ -7,22 +7,13 @@ from sankee import utils
 
 # Take a dataframe with two columns representing start conditions and end conditions and return it in a new dataframe
 # for use in sankey plotting
-def sankify_data(data, dataset, unique_classes, start_index=0, class_labels=None, class_palette=None, normalize=False):
-    # Start index needs to come from the last index of the previous group of columns (or 0 if it's the first). It is used to
-    # offset the labels
-    class_labels, class_palette = utils.parse_dataset(
-        dataset, class_labels, class_palette)
-
+def sankify_data(data, unique_classes, dataset, start_index=0):
     column_list = data.columns.tolist()
     # The label of the first column, assumed to be the starting condition
     start_column = column_list[0]
 
     # Transform the data to get counts of each combination of condition
     sankey_data = data.groupby(column_list).size().reset_index(name="value")
-
-    if normalize:
-        sankey_data = utils.normalize_groups(
-            sankey_data, start_column, "value")
 
     sankey_data["change"] = utils.normalized_change(
         sankey_data, start_column, "value")
@@ -34,9 +25,9 @@ def sankify_data(data, dataset, unique_classes, start_index=0, class_labels=None
         lambda x: unique_classes.index(x) + start_index + len(unique_classes))
 
     sankey_data["source_label"] = sankey_data[column_list[0]].apply(
-        lambda i: class_labels[i])
+        lambda i: dataset.labels[i])
     sankey_data["target_label"] = sankey_data[column_list[1]].apply(
-        lambda i: class_labels[i])
+        lambda i: dataset.labels[i])
 
     return sankey_data[["source", "target", "value", "source_label", "target_label", "change"]]
 
@@ -45,7 +36,7 @@ def sankify_data(data, dataset, unique_classes, start_index=0, class_labels=None
 # Eventually I will replace sample_change with this, but for now I'm keeping it separate.
 def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, scale=None, seed=0, dropna=True):
     """
-    Randomly sample values of two images to quantify change over time.
+    Randomly sample values of a list of images to quantify change over time.
 
     :param list image_list: An list of classified ee.Image objects representing change over time.
     :param ee.Geometry region: The region to sample.
@@ -137,8 +128,7 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
     the unimportant classes will be omitted from the plot.
     :param list exclude: A list of class values to remove from the plot.
     """
-    class_labels, class_palette = utils.parse_dataset(
-        dataset, class_labels, class_palette)
+    dataset = utils.parse_dataset(dataset, class_labels, class_palette)
 
     if exclude:
         data = data[~data.isin(exclude)].dropna()
@@ -163,7 +153,7 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
         group_data = data.iloc[:, column_group]
 
         sankified = sankify_data(
-            group_data, dataset, unique_classes, start_index=current_index)
+            group_data, unique_classes, dataset, start_index=current_index)
         # The start condition of the next column group will be the end condition of this column group. This sets the index
         # offset to achieve that.
         current_index += len(sankified) // 2

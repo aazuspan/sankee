@@ -1,3 +1,6 @@
+from sankee.datasets import Dataset
+
+
 def get_missing_keys(key_list, key_dict):
     """
     Find any keys that are present in a list that are not present in the keys of a dictionary. Helpful for testing if a 
@@ -47,7 +50,7 @@ def check_plot_params(data, labels, palette):
 def parse_dataset(dataset, labels, palette):
     """
     Take a dataset, labels, and palette and check that enough parameters are defined to generate a graph. Raise an error
-    if too few parameters or too many parameters are defined. Otherwise, return the labels and palette.
+    if too few parameters or too many parameters are defined. Otherwise, return a dataset.
     """
     if dataset is None and any([x is None for x in [labels, palette]]):
         raise ValueError(
@@ -55,11 +58,10 @@ def parse_dataset(dataset, labels, palette):
     elif dataset is not None and any([x is not None for x in [labels, palette]]):
         raise ValueError(
             "Provide only a dataset or class labels and a class palette, not both.")
-    elif dataset:
-        labels = dataset.labels
-        palette = dataset.palette
+    elif not dataset:
+        dataset = Dataset(None, labels, palette)
 
-    return labels, palette
+    return dataset
 
 
 def drop_classes(data, max_classes, metric="area"):
