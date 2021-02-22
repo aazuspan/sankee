@@ -7,23 +7,28 @@ from sankee import utils
 
 # Take a dataframe with two columns representing start conditions and end conditions and return it in a new dataframe
 # for use in sankey plotting
-def sankify_data(data, unique_classes, dataset, start_index=0):
+def sankify_data(data, dataset, start_index=0):
     column_list = data.columns.tolist()
-    # The label of the first column, assumed to be the starting condition
-    start_column = column_list[0]
 
     # Transform the data to get counts of each combination of condition
     sankey_data = data.groupby(column_list).size().reset_index(name="value")
 
+    # Calculate normalized change from start to end condition
     sankey_data["change"] = utils.normalized_change(
-        sankey_data, start_column, "value")
+        sankey_data, column_list[0], "value")
 
+    # Get lists of unique source and target classes
+    unique_source = pd.unique(data[column_list[0]].values.flatten()).tolist()
+    unique_target = pd.unique(data[column_list[1]].values.flatten()).tolist()
+
+    # Generate a unique index for each source and target
     sankey_data["source"] = sankey_data[column_list[0]].apply(
-        lambda x: unique_classes.index(x) + start_index)
-    # Offset the target IDs by the number of classes to prevent overlap with source IDs
+        lambda x: unique_source.index(x) + start_index)
+    # Offset the target IDs by the number of source classes to prevent overlap with source IDs
     sankey_data["target"] = sankey_data[column_list[1]].apply(
-        lambda x: unique_classes.index(x) + start_index + len(unique_classes))
+        lambda x: unique_target.index(x) + start_index + sankey_data.source.max() + 1)
 
+    # Assign labels to each source and target
     sankey_data["source_label"] = sankey_data[column_list[0]].apply(
         lambda i: dataset.labels[i])
     sankey_data["target_label"] = sankey_data[column_list[1]].apply(
@@ -135,9 +140,6 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
 
     data = utils.drop_classes(data, max_classes)
 
-    # Get a list of all unique classes present in the data
-    unique_classes = pd.unique(data.values.flatten()).tolist()
-
     node_labels = []
     link_labels = []
     label = []
@@ -153,7 +155,7 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
         group_data = data.iloc[:, column_group]
 
         sankified = sankify_data(
-            group_data, unique_classes, dataset, start_index=current_index)
+            group_data, dataset, start_index=current_index)
         # The start condition of the next column group will be the end condition of this column group. This sets the index
         # offset to achieve that.
         current_index += len(sankified) // 2
@@ -167,17 +169,28 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
 
         # Generate a list of strings describing the change in each row
         for i, row in sankified.iterrows():
-            if row.source == row.target:
+            if row.source_label == row.target_label:
                 link_label = f"{round(row.change * 100)}% of {row.source_label} remained {row.target_label}"
             else:
                 link_label = f"{round(row.change * 100)}% of {row.source_label} became {row.target_label}"
             link_labels.append(link_label)
 
-        label += utils.ordered_unique(sankified.source_label.tolist()) + \
-            utils.ordered_unique(sankified.target_label.tolist())
+        source_labels = utils.ordered_unique(
+            sankified[["source", "source_label"]].sort_values(by="source").source_label.tolist())
+        target_labels = utils.ordered_unique(
+            sankified[["target", "target_label"]].sort_values(by="target").target_label.tolist())
+
+        label += source_labels + target_labels
+
         source += sankified.source.tolist()
         target += sankified.target.tolist()
         value += sankified.value.tolist()
+
+        print(source)
+        print(source_labels)
+        print(target)
+        print(target_labels)
+        # return sankified
 
     # Store the column label for the final target data
     node_labels += [end_label for i in range(len(pd.unique(sankified.target)))]
