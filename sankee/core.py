@@ -247,7 +247,7 @@ def sankify(image_list, region, label_list=None, dataset=None, band=None, class_
     within a region.
     """
     dataset = utils.parse_dataset(dataset, band, class_labels, class_palette)
-    data = sample(image_list, region, dataset, label_list=label_list,
+    data = sample(image_list, region, dataset, band=band, label_list=label_list,
                   n=n, scale=scale, seed=seed, dropna=dropna)
     cleaned = clean(data, exclude, max_classes)
     node_labels, link_labels, node_palette, link_palette, label, source, target, value = sankify_data(
