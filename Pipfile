@@ -1,17 +1,15 @@
 [[source]]
-name = "pypi"
 url = "https://pypi.org/simple"
 verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "~=1.20.1"
+pandas = "~=1.2.2"
+plotly = "~=4.14.3"
+earthengine-api = "~=0.1.252"
 
 [dev-packages]
 
-[packages]
-ipykernel = "*"
-earthengine-api = "*"
-numpy = "*"
-pandas = "*"
-plotly = "*"
-nbformat = "*"
-
 [requires]
-python_version = "3.7"
+python_version = "3.8"
