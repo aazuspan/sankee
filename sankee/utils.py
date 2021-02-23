@@ -59,7 +59,7 @@ def parse_dataset(dataset=None, band=None, labels=None, palette=None):
         raise ValueError(
             "Provide only a dataset or class labels and a class palette, not both.")
     elif not dataset:
-        dataset = Dataset(band, labels, palette)
+        dataset = Dataset("generated dataset", None, labels, palette)
 
     return dataset
 
