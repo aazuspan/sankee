@@ -5,38 +5,6 @@ import plotly.graph_objects as go
 from sankee import utils
 
 
-# Take a dataframe with two columns representing start conditions and end conditions and return it in a new dataframe
-# for use in sankey plotting
-def sankify_data(data, dataset, start_index=0):
-    column_list = data.columns.tolist()
-
-    # Transform the data to get counts of each combination of condition
-    sankey_data = data.groupby(column_list).size().reset_index(name="value")
-
-    # Calculate normalized change from start to end condition
-    sankey_data["change"] = utils.normalized_change(
-        sankey_data, column_list[0], "value")
-
-    # Get lists of unique source and target classes
-    unique_source = pd.unique(data[column_list[0]].values.flatten()).tolist()
-    unique_target = pd.unique(data[column_list[1]].values.flatten()).tolist()
-
-    # Generate a unique index for each source and target
-    sankey_data["source"] = sankey_data[column_list[0]].apply(
-        lambda x: unique_source.index(x) + start_index)
-    # Offset the target IDs by the last source class to prevent overlap with source IDs
-    sankey_data["target"] = sankey_data[column_list[1]].apply(
-        lambda x: unique_target.index(x) + sankey_data.source.max() + 1)
-
-    # Assign labels to each source and target
-    sankey_data["source_label"] = sankey_data[column_list[0]].apply(
-        lambda i: dataset.labels[i])
-    sankey_data["target_label"] = sankey_data[column_list[1]].apply(
-        lambda i: dataset.labels[i])
-
-    return sankey_data[["source", "target", "value", "source_label", "target_label", "change"]]
-
-
 # Same as sample change but takes a list of images and an optional label list and returns a datafame with all images sampled.
 # Eventually I will replace sample_change with this, but for now I'm keeping it separate.
 def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, scale=None, seed=0, dropna=True):
@@ -115,13 +83,14 @@ def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, 
     return data[label_list]
 
 
-def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=5, title=None, exclude=None):
+def sankify_data(data, dataset=None, class_labels=None, class_palette=None):
     """
-    Generate a stacked area plot showing how the sampled area of cover changed from a start condition to an end
-    condition.
+    Take a dataframe of data representing classified sample points and return all parameters needed to generate a
+    Sankey plot. This is done by looping through columns in groups of two representing start and end conditions and
+    reformating data to match the Plotly Sankey input parameters.
 
-    :param pd.DataFrame data: A dataframe in which each row represents as single sample point with the starting class
-    in the "start" column and the ending class in the "end" column.
+    :param pd.DataFrame data: A dataframe in which each row represents as single sample point and columns represent
+    classes over an arbitrary number of time periods.
     :param geevis.dataset.Dataset dataset: A dataset from which the class data was generated, containing labels and
     palettes corresponding to class values. If a dataset is not provided, class labels and a class palette must be
     provided instead.
@@ -129,16 +98,44 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
     labels. Every class index in the sample dataset must be included in class_labels.
     :param dict class_palette: A dictionary where keys are the class index values and the values are corresponding
     colors. Every class index in the sample dataset must be included in class_palette.
-    :param int max_classes: The maximum number of unique classes to include in the plot. If more classes are present,
-    the unimportant classes will be omitted from the plot.
-    :param list exclude: A list of class values to remove from the plot.
+    :return tuple: A tuple of values used in Sankey plotting in the following order: node labels, link labels, node
+    palette, link palette, labels, source, target, and values.
     """
+    # Take a dataframe with two columns representing start conditions and end conditions and return it in a new dataframe
+    # for use in sankey plotting
+    def sankify_group(group_data, start_index=0):
+        column_list = group_data.columns.tolist()
+
+        # Transform the data to get counts of each combination of condition
+        sankey_data = group_data.groupby(
+            column_list).size().reset_index(name="value")
+
+        # Calculate normalized change from start to end condition
+        sankey_data["change"] = utils.normalized_change(
+            sankey_data, column_list[0], "value")
+
+        # Get lists of unique source and target classes
+        unique_source = pd.unique(
+            data[column_list[0]].values.flatten()).tolist()
+        unique_target = pd.unique(
+            data[column_list[1]].values.flatten()).tolist()
+
+        # Generate a unique index for each source and target
+        sankey_data["source"] = sankey_data[column_list[0]].apply(
+            lambda x: unique_source.index(x) + start_index)
+        # Offset the target IDs by the last source class to prevent overlap with source IDs
+        sankey_data["target"] = sankey_data[column_list[1]].apply(
+            lambda x: unique_target.index(x) + sankey_data.source.max() + 1)
+
+        # Assign labels to each source and target
+        sankey_data["source_label"] = sankey_data[column_list[0]].apply(
+            lambda i: dataset.labels[i])
+        sankey_data["target_label"] = sankey_data[column_list[1]].apply(
+            lambda i: dataset.labels[i])
+
+        return sankey_data[["source", "target", "value", "source_label", "target_label", "change"]]
+
     dataset = utils.parse_dataset(dataset, class_labels, class_palette)
-
-    if exclude:
-        data = data[~data.isin(exclude)].dropna()
-
-    data = utils.drop_classes(data, max_classes)
 
     node_labels = []
     link_labels = []
@@ -148,14 +145,12 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
     value = []
     current_index = 0
 
-    # Loop through columns in groups of two (start and end conditions) and combine data for sankey plotting
     for i in range(data.columns.size - 1):
         column_group = (range(i, i+2))
         # Select a set of start and end condition columns
         group_data = data.iloc[:, column_group]
 
-        sankified = sankify_data(
-            group_data, dataset, start_index=current_index)
+        sankified = sankify_group(group_data, start_index=current_index)
         # The start index of the next column group will be the end index of this column group. This sets the index
         # offset to achieve that.
         current_index = sankified.target.min()
@@ -191,6 +186,30 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
     node_palette = [dataset.get_color(l) for l in label]
     link_palette = [dataset.get_color(i) for i in [label[j] for j in source]]
 
+    return (node_labels, link_labels, node_palette, link_palette, label, source, target, value)
+
+
+def clean(data, exclude=None, max_classes=None):
+    """
+    Perform some cleaning on data before plotting by excluding unwanted classes and limiting the number of classes.
+
+    :param int max_classes: The maximum number of unique classes to include in the plot. If more classes are present,
+    the unimportant classes will be omitted from the plot. If max_classes is None, no classes will be dropped.
+    :param list exclude: A list of class values to remove from the plot.
+    """
+    if exclude:
+        data = data[~data.isin(exclude)].dropna()
+    if max_classes:
+        data = utils.drop_classes(data, max_classes)
+
+    return data
+
+
+def plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=None):
+    """
+    Generate a Sankey plot of land cover change over an arbitrary number of time steps.
+    """
+
     fig = go.Figure(data=[go.Sankey(
         node=dict(
             pad=15,
@@ -219,3 +238,18 @@ def plot(data, dataset=None, class_labels=None, class_palette=None, max_classes=
         )
 
     return fig
+
+
+def sankify(image_list, region, label_list=None, dataset=None, band=None, class_labels=None, class_palette=None,
+            exclude=None, max_classes=None, n=100, title=None, scale=None, seed=0, dropna=True):
+    """
+    Perform sampling, data cleaning and reformatting, and generation of a Sankey plot of land cover change over time
+    within a region.
+    """
+    dataset = utils.parse_dataset(dataset, band, class_labels, class_palette)
+    data = sample(image_list, region, dataset, label_list=label_list,
+                  n=n, scale=scale, seed=seed, dropna=dropna)
+    cleaned = clean(data, exclude, max_classes)
+    node_labels, link_labels, node_palette, link_palette, label, source, target, value = sankify_data(
+        cleaned, dataset)
+    return plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)

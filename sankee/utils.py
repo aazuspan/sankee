@@ -47,7 +47,7 @@ def check_plot_params(data, labels, palette):
             f"The following values are present in the data and undefined in the palette: {missing_palette}")
 
 
-def parse_dataset(dataset, labels, palette):
+def parse_dataset(dataset=None, band=None, labels=None, palette=None):
     """
     Take a dataset, labels, and palette and check that enough parameters are defined to generate a graph. Raise an error
     if too few parameters or too many parameters are defined. Otherwise, return a dataset.
@@ -59,7 +59,7 @@ def parse_dataset(dataset, labels, palette):
         raise ValueError(
             "Provide only a dataset or class labels and a class palette, not both.")
     elif not dataset:
-        dataset = Dataset(None, labels, palette)
+        dataset = Dataset(band, labels, palette)
 
     return dataset
 
