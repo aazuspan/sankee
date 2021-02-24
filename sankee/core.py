@@ -83,7 +83,7 @@ def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, 
     return data[label_list]
 
 
-def sankify_data(data, dataset=None, class_labels=None, class_palette=None):
+def reformat(data, dataset=None, class_labels=None, class_palette=None):
     """
     Take a dataframe of data representing classified sample points and return all parameters needed to generate a
     Sankey plot. This is done by looping through columns in groups of two representing start and end conditions and
@@ -103,7 +103,7 @@ def sankify_data(data, dataset=None, class_labels=None, class_palette=None):
     """
     # Take a dataframe with two columns representing start conditions and end conditions and return it in a new dataframe
     # for use in sankey plotting
-    def sankify_group(group_data, start_index=0):
+    def reformat_group(group_data, start_index=0):
         column_list = group_data.columns.tolist()
 
         # Transform the data to get counts of each combination of condition
@@ -135,11 +135,16 @@ def sankify_data(data, dataset=None, class_labels=None, class_palette=None):
 
         return sankey_data[["source", "target", "value", "source_label", "target_label", "change"]]
 
+    # Figure out the max index that will be used for the data based on the number of unique classes and time periods
+    max_id = len(pd.unique(data.values.flatten())) * len(data.columns)
+
     dataset = utils.parse_dataset(dataset, class_labels, class_palette)
 
     node_labels = []
     link_labels = []
-    label = []
+
+    # Pre-allocate a list of labels that will be iteratively assigned
+    label = [None for i in range(max_id)]
     source = []
     target = []
     value = []
@@ -150,7 +155,7 @@ def sankify_data(data, dataset=None, class_labels=None, class_palette=None):
         # Select a set of start and end condition columns
         group_data = data.iloc[:, column_group]
 
-        sankified = sankify_group(group_data, start_index=current_index)
+        sankified = reformat_group(group_data, start_index=current_index)
         # The start index of the next column group will be the end index of this column group. This sets the index
         # offset to achieve that.
         current_index = sankified.target.min()
@@ -170,12 +175,9 @@ def sankify_data(data, dataset=None, class_labels=None, class_palette=None):
                 link_label = f"{round(row.change * 100)}% of {row.source_label} became {row.target_label}"
             link_labels.append(link_label)
 
-        source_labels = utils.ordered_unique(
-            sankified[["source", "source_label"]].sort_values(by="source").source_label.tolist())
-        target_labels = utils.ordered_unique(
-            sankified[["target", "target_label"]].sort_values(by="target").target_label.tolist())
-
-        label += source_labels + target_labels
+            # Assign class labels to match their respective indexes
+            label[row.source] = row.source_label
+            label[row.target] = row.target_label
 
         source += sankified.source.tolist()
         target += sankified.target.tolist()
@@ -250,6 +252,6 @@ def sankify(image_list, region, label_list=None, dataset=None, band=None, class_
     data = sample(image_list, region, dataset, band=band, label_list=label_list,
                   n=n, scale=scale, seed=seed, dropna=dropna)
     cleaned = clean(data, exclude, max_classes)
-    node_labels, link_labels, node_palette, link_palette, label, source, target, value = sankify_data(
+    node_labels, link_labels, node_palette, link_palette, label, source, target, value = reformat(
         cleaned, dataset)
     return plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)
