@@ -5,8 +5,6 @@ import plotly.graph_objects as go
 from sankee import utils
 
 
-# Same as sample change but takes a list of images and an optional label list and returns a datafame with all images sampled.
-# Eventually I will replace sample_change with this, but for now I'm keeping it separate.
 def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, scale=None, seed=0, dropna=True):
     """
     Randomly sample values of a list of images to quantify change over time.
@@ -33,12 +31,14 @@ def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, 
         band = dataset.band
 
     if not label_list:
-        label_list = [str(i) for i in range(len(image_list))]
+        label_list = [i for i in range(len(image_list))]
 
     # Cast every element in label list to string since GEE can't handle that
     label_list = [str(x) for x in label_list]
 
-    assert len(label_list) == len(image_list) > 1
+    if not len(label_list) == len(image_list) > 1:
+        raise ValueError(
+            "Length of label list must match length of image list and be greater than zero.")
 
     # Assign a label to each image from the label list
     def label_images(img, img_list):
@@ -47,7 +47,7 @@ def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, 
         index = img_list.indexOf(img)
         img_label = ee.List(label_list).get(index)
 
-        indexed_img = ee.Image(img).set("label", img_label)
+        indexed_img = ee.Image(img).set("sankee_label", img_label)
         img_list = img_list.set(img_list.indexOf(img), indexed_img)
 
         return img_list
@@ -65,7 +65,7 @@ def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, 
             # Extract the cover value at the point
             cover = img.reduceRegion(ee.Reducer.first(), geom, scale).get(band)
             # Get the user-defined label that was stored in the image
-            label = img.get('label')
+            label = img.get('sankee_label')
 
             # Set a property where the name is the label and the value is the extracted cover
             return ee.Feature(feature).set(label, cover)
