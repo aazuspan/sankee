@@ -1,6 +1,10 @@
 # sankee
 Visualize classified time series data with interactive Sankey plots in Google Earth Engine
 
+[![MODIS glacier loss example Sankey plot](examples/MODIS.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/MODIS.html)
+
+
+
 ## Description
 `sankee` provides a dead-simple API that combines the power of GEE and Plotly to visualize changes in land cover, plant health, burn severity, or any other classified imagery over a time series in a region of interst using interactive Sankey plots. Use a library of built-in datasets like NLCD or MODIS Land Cover for convenience or define your own custom datasets.
 
@@ -38,6 +42,7 @@ title = "Las Vegas Land Cover Change, 2001 - 2016"
 # Generate your Sankey plot
 plot = sankee.sankify(img_list, vegas, label_list, dataset, max_classes=4, title=title)
 ```
+[![NLCD Las Vegas urbanization example Sankey plot](examples/NLCD.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/NLCD.html)
 
 ### Using a Custom Dataset
 Datasets can also be manually defined for custom datasets. See [datasets](https://github.com/aazuspan/sankee#Datasets) for a detailed explanation.
@@ -64,6 +69,8 @@ label_list = ["Immediate", "Recovery"]
 # Generate your Sankey plot
 plot = sankee.sankify(img_list, fire, label_list, band=band, labels=labels, palette=palette, scale=20)
 ```
+[![NDVI post-fire recover example Sankey plot](examples/NDVI.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/NDVI.html)
+
 
 ### Separate Functions for Maximum Control
 `sankee.sankify` is a convenience function that wraps four separate functions.
