@@ -94,7 +94,7 @@ Randomly sample a list of images to generate a Sankey plot for visualizing chang
 
 __Arguments__  
 - image_list (list)
-  - An ordered list of images representing a time series of classified data. Each image will be sampled to generate the Sankey plot. 
+  - An ordered list of images representing a time series of classified data. Each image will be sampled to generate the Sankey plot. Any length of list is allowed, but lists with more than 3 or 4 images may produce unusable plots. 
 - region (ee.Geometry)
   - A region to generate samples within.
 - *label_list (list, default: None)*
