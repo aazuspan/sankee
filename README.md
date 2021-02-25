@@ -8,6 +8,10 @@ Visualize classified time series data with interactive Sankey plots in Google Ea
 
 In progess...
 
+## Requirements
+- An authenticated GEE Python environment ([offical guide](https://developers.google.com/earth-engine/guides/python_install))
+- `Numpy`, `Pandas`, `Plotly`, and `earthengine-api`
+
 ## Usage 
 
 ### Using a Premade Dataset
@@ -53,14 +57,12 @@ palette = {
     2: "#2ca25f"
 }
 
-title="5-Year Postfire Recovery"
-
-# Select images (in this class, classified NDVI values before and after fire)
+# Select images (in this case, classified NDVI values before and after fire)
 img_list = [immediate_class, recovery_class]
 label_list = ["Immediate", "Recovery"]
 
 # Generate your Sankey plot
-plot = sankee.sankify(img_list, fire, label_list, band=band, labels=labels, palette=palette, scale=20, title=title)
+plot = sankee.sankify(img_list, fire, label_list, band=band, labels=labels, palette=palette, scale=20)
 ```
 
 ### Separate Functions for Maximum Control
@@ -81,7 +83,7 @@ For maximum control, each of these functions is available independently, allowin
 
 ### Datasets
 
-Datasets in `sankee` define how classified image values are labeled and colored when plotting (eg. a value of 42 in an NLCD 2016 image should be labeled "Evergeen forest" and colored <span style="color:green">green</span>). `label` and `palette` arguments for `sankee` functions can be manually provided as dictionaries where pixel values are keys and labels and colors are values. Every value in the image __must__ have a corresponding color and label. Datasets also define the `band` name in the image in which classified values are found.
+Datasets in `sankee` define how classified image values are labeled and colored when plotting (eg. a value of 42 in an NLCD 2016 image should be labeled "Evergeen forest" and colored green). `label` and `palette` arguments for `sankee` functions can be manually provided as dictionaries where pixel values are keys and labels and colors are values. Every value in the image __must__ have a corresponding color and label. Datasets also define the `band` name in the image in which classified values are found.
 
 Any classified image can be visualized by manually defining a band, palette, and label. However, premade datasets are included for convenience in the `sankee.datasets` module. To access a dataset, use its name, such as `sankee.datasets.NLCD2016`. To get a list of all dataset names, run `sankee.datasets.names()`. Datasets can also be accessed using `sankee.datasets.get()` which returns a list of `Dataset` objects that can be selecting by indexing.
 
