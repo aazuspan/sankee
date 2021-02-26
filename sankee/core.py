@@ -83,7 +83,7 @@ def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, 
     return data[label_list]
 
 
-def reformat(data, dataset=None, class_labels=None, class_palette=None):
+def reformat(data, dataset=None, labels=None, palette=None):
     """
     Take a dataframe of data representing classified sample points and return all parameters needed to generate a
     Sankey plot. This is done by looping through columns in groups of two representing start and end conditions and
@@ -94,10 +94,10 @@ def reformat(data, dataset=None, class_labels=None, class_palette=None):
     :param geevis.dataset.Dataset dataset: A dataset from which the class data was generated, containing labels and
     palettes corresponding to class values. If a dataset is not provided, class labels and a class palette must be
     provided instead.
-    :param dict class_labels: A dictionary where keys are the class index values and the values are corresponding
-    labels. Every class index in the sample dataset must be included in class_labels.
-    :param dict class_palette: A dictionary where keys are the class index values and the values are corresponding
-    colors. Every class index in the sample dataset must be included in class_palette.
+    :param dict labels: A dictionary where keys are the class index values and the values are corresponding
+    labels. Every class index in the sample dataset must be included in labels.
+    :param dict palette: A dictionary where keys are the class index values and the values are corresponding
+    colors. Every class index in the sample dataset must be included in palette.
     :return tuple: A tuple of values used in Sankey plotting in the following order: node labels, link labels, node
     palette, link palette, labels, source, target, and values.
     """
@@ -138,7 +138,7 @@ def reformat(data, dataset=None, class_labels=None, class_palette=None):
     # Figure out the max index that will be used for the data based on the number of unique classes and time periods
     max_id = len(pd.unique(data.values.flatten())) * len(data.columns)
 
-    dataset = utils.parse_dataset(dataset, class_labels, class_palette)
+    dataset = utils.parse_dataset(dataset, labels, palette)
 
     node_labels = []
     link_labels = []
@@ -243,13 +243,13 @@ def plot(node_labels, link_labels, node_palette, link_palette, label, source, ta
     return fig
 
 
-def sankify(image_list, region, label_list=None, dataset=None, band=None, class_labels=None, class_palette=None,
+def sankify(image_list, region, label_list=None, dataset=None, band=None, labels=None, palette=None,
             exclude=None, max_classes=None, n=100, title=None, scale=None, seed=0, dropna=True):
     """
     Perform sampling, data cleaning and reformatting, and generation of a Sankey plot of land cover change over time
     within a region.
     """
-    dataset = utils.parse_dataset(dataset, band, class_labels, class_palette)
+    dataset = utils.parse_dataset(dataset, band, labels, palette)
     data = sample(image_list, region, dataset, band=band, label_list=label_list,
                   n=n, scale=scale, seed=seed, dropna=dropna)
     cleaned = clean(data, exclude, max_classes)
