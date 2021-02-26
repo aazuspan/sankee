@@ -12,6 +12,7 @@ earthengine-api = "~=0.1.252"
 [dev-packages]
 ipykernel = "*"
 nbformat = ">=4.2.0"
+pipenv-setup = "*"
 
 [requires]
 python_version = "3.8"
