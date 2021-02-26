@@ -214,30 +214,31 @@ def plot(node_labels, link_labels, node_palette, link_palette, label, source, ta
 
     fig = go.Figure(data=[go.Sankey(
         node=dict(
-            pad=15,
+            pad=30,
             thickness=20,
-            line=dict(color="black", width=0.5),
+            line=dict(color="#000000", width=1),
             customdata=node_labels,
             hovertemplate='%{customdata}<extra></extra>',
             label=label,
             color=node_palette
+            # color="#ffffff"
         ),
         link=dict(
             source=source,
             target=target,
+            line=dict(color="#909090", width=1),
             value=value,
             color=link_palette,
             customdata=link_labels,
             hovertemplate='%{customdata} <extra></extra>',
         ))])
 
-    if title:
-        fig.update_layout(
-            title_text=f"<b>{title}</b>",
-            font_size=14,
-            title_x=0.5,
-            template="seaborn"
-        )
+    fig.update_layout(
+        title_text=f"<b>{title}</b>" if title else None,
+        font_size=16,
+        title_x=0.5,
+        paper_bgcolor='rgba(0, 0, 0, 0)'
+    )
 
     return fig
 
