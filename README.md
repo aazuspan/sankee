@@ -37,7 +37,7 @@ vegas = ee.Geometry.Polygon(
           [-115.3248245976893, 36.29589873319828]]])
 
 # Choose a title to display over your plot (optional)
-title = "Las Vegas Land Cover Change, 2001 - 2016"
+title = "Las Vegas Urban Sprawl, 2001 - 2016"
 
 # Generate your Sankey plot
 plot = sankee.sankify(img_list, vegas, label_list, dataset, max_classes=4, title=title)
