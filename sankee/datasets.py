@@ -37,6 +37,7 @@ class Dataset:
 class datasets(Dataset, Enum):
     NLCD2016 = ("NLCD 2016",
                 "landcover", {
+                    1: "No data",
                     11: "Open water",
                     12: "Perennial ice/snow",
                     21: "Developed, open space",
@@ -58,6 +59,7 @@ class datasets(Dataset, Enum):
                     90: "Woody wetlands",
                     95: "Emergent herbaceous wetlands"
                 }, {
+                    1: "#000000",
                     11: "#466b9f",
                     12: "#d1def8",
                     21: "#dec5c5",
