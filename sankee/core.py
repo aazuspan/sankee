@@ -135,16 +135,15 @@ def reformat(data, dataset=None, labels=None, palette=None):
 
         return sankey_data[["source", "target", "value", "source_label", "target_label", "change"]]
 
-    # Figure out the max index that will be used for the data based on the number of unique classes and time periods
+    # Figure out the max index that could be used for the data based on the number of unique classes and time periods
     max_id = len(pd.unique(data.values.flatten())) * len(data.columns)
+    # Pre-allocate a list of labels that will be iteratively assigned labels up to the max id
+    label = [None for i in range(max_id)]
 
     dataset = utils.parse_dataset(dataset, labels, palette)
 
     node_labels = []
     link_labels = []
-
-    # Pre-allocate a list of labels that will be iteratively assigned
-    label = [None for i in range(max_id)]
     source = []
     target = []
     value = []
@@ -182,6 +181,15 @@ def reformat(data, dataset=None, labels=None, palette=None):
         source += sankified.source.tolist()
         target += sankified.target.tolist()
         value += sankified.value.tolist()
+
+    # TODO: Refactor for efficiency (and because this is embarrasingly hacky).
+    # If the source and target contain different numbers of classes, there will be None's left in the pre-allocated
+    # label list because the max_id was too high. This will cause get_color to fail. To avoid this, the label generation
+    # system should be refactored. One solution would be to calculate max id based on the sum of the length of the
+    # unique source and target classes instead of unique cumulative classes.
+    for l in label:
+        if l is None:
+            label.remove(l)
 
     # Store the column label for the final target data
     node_labels += [end_label for i in range(len(pd.unique(sankified.target)))]

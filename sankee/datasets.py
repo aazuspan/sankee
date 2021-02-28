@@ -192,6 +192,60 @@ class datasets(Dataset, Enum):
                       }
                       )
 
+    CGLS_LC100 = ("CGLS-LC100",
+                  "discrete_classification",
+                  {
+                      0: "Unknown",
+                      20: "Shrubs",
+                      30: "Herbaceous vegetation",
+                      40: "Cultivated",
+                      50: "Urban",
+                      60: "Bare",
+                      70: "Snow and ice",
+                      80: "Water body",
+                      90: "Herbaceous wetland",
+                      100: "Moss and lichen",
+                      111: "Closed forest, evergreen conifer",
+                      112: "Closed forest, evergreen broad leaf",
+                      113: "Closed forest, deciduous conifer",
+                      114: "Closed forest, deciduous broad leaf",
+                      115: "Closd forest, mixed",
+                      116: "Closed forest, other",
+                      121: "Open forest, evergreen conifer",
+                      122: "Open forest, evergreen broad leaf",
+                      123: "Open forest, deciduous conifer",
+                      124: "Open forest, deciduous broad leaf",
+                      125: "Open forest, mixed",
+                      126: "Open forest, other",
+                      200: "Ocean"
+                  },
+                  {
+                      0: "#282828",
+                      20: "#FFBB22",
+                      30: "#FFFF4C",
+                      40: "#F096FF",
+                      50: "#FA0000",
+                      60: "#B4B4B4",
+                      70: "#F0F0F0",
+                      80: "#0032C8",
+                      90: "#0096A0",
+                      100: "#FAE6A0",
+                      111: "#58481F",
+                      112: "#009900",
+                      113: "#70663E",
+                      114: "#00CC00",
+                      115: "#4E751F",
+                      116: "#007800",
+                      121: "#666000",
+                      122: "#8DB400",
+                      123: "#8D7400",
+                      124: "#A0DC00",
+                      125: "#929900",
+                      126: "#648C00",
+                      200: "#000080"
+                  }
+                  )
+
     @classmethod
     def names(cls):
         """
