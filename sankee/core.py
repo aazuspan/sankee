@@ -187,9 +187,8 @@ def reformat(data, dataset=None, labels=None, palette=None):
     # label list because the max_id was too high. This will cause get_color to fail. To avoid this, the label generation
     # system should be refactored. One solution would be to calculate max id based on the sum of the length of the
     # unique source and target classes instead of unique cumulative classes.
-    for l in label:
-        if l is None:
-            label.remove(l)
+    while None in label:
+        label.remove(None)
 
     # Store the column label for the final target data
     node_labels += [end_label for i in range(len(pd.unique(sankified.target)))]
