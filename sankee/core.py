@@ -73,9 +73,16 @@ def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, 
         return ee.Feature(labeled_images.iterate(extract, point))
 
     sample_data = samples.map(extract_values)
-
-    data = pd.DataFrame.from_dict(
-        [feat["properties"] for feat in ee.Feature(sample_data).getInfo()["features"]])
+    try:
+        data = pd.DataFrame.from_dict(
+            [feat["properties"] for feat in ee.Feature(sample_data).getInfo()["features"]])
+    except ee.EEException as e:
+        # ee may return an exception complaining about the band name not being found
+        if band in e.args[0]:
+            raise ValueError(
+                f'"{band}" is not a valid band name. Check that the dataset band name exists for all images.')
+        else:
+            raise e
 
     if dropna:
         data = data.dropna()
@@ -215,7 +222,6 @@ def plot(node_labels, link_labels, node_palette, link_palette, label, source, ta
     """
     Generate a Sankey plot of land cover change over an arbitrary number of time steps.
     """
-
     fig = go.Figure(data=[go.Sankey(
         node=dict(
             pad=30,
@@ -225,7 +231,6 @@ def plot(node_labels, link_labels, node_palette, link_palette, label, source, ta
             hovertemplate='%{customdata}<extra></extra>',
             label=label,
             color=node_palette
-            # color="#ffffff"
         ),
         link=dict(
             source=source,
