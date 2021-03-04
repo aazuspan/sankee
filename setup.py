@@ -43,7 +43,7 @@ setup(
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version="0.0.0",  # Required
+    version="0.0.1",  # Required
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
@@ -89,8 +89,8 @@ setup(
         #   5 - Production/Stable
         "Development Status :: 3 - Alpha",
         # Indicate who your project is intended for
-        "Intended Audience :: Developers",
-        "Topic :: Software Development :: Build Tools",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering",
         # Pick your license as you wish
         "License :: OSI Approved :: MIT License",
         # Specify the Python versions you support here. In particular, ensure
@@ -106,7 +106,7 @@ setup(
     # project page. What does your project relate to?
     #
     # Note that this is a string of words separated by whitespace, not a list.
-    keywords="sample setuptools development",  # Optional
+    keywords="sankey land cover visualization",  # Optional
     # You can just specify package directories manually here if your project is
     # simple. Or you can use find_packages().
     #
@@ -134,7 +134,7 @@ setup(
         "certifi==2020.12.5",
         "cffi==1.14.5",
         "chardet==4.0.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'",
-        "earthengine-api==0.1.253",
+        "earthengine-api==0.1.254",
         "future==0.18.2; python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
         "google-api-core==1.26.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
         "google-api-python-client==1.12.8; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
@@ -150,9 +150,9 @@ setup(
         "idna==2.10; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
         "numpy==1.20.1",
         "packaging==20.9; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-        "pandas==1.2.2",
+        "pandas==1.2.3",
         "plotly==4.14.3",
-        "protobuf==3.15.3",
+        "protobuf==3.15.4",
         "pyasn1==0.4.8",
         "pyasn1-modules==0.2.8",
         "pycparser==2.20; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
