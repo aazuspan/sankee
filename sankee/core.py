@@ -127,16 +127,21 @@ def reformat(data, dataset=None, labels=None, palette=None):
         sankey_data["target"] = sankey_data[column_list[1]].apply(
             lambda x: unique_target.index(x) + sankey_data.source.max() + 1)
 
-        # Assign labels to each source and target
-        sankey_data["source_label"] = sankey_data[column_list[0]].apply(
-            lambda i: dataset.labels[i])
-        sankey_data["target_label"] = sankey_data[column_list[1]].apply(
-            lambda i: dataset.labels[i])
+        try:
+            # Assign labels to each source and target
+            sankey_data["source_label"] = sankey_data[column_list[0]].apply(
+                lambda i: dataset.labels[i])
+            sankey_data["target_label"] = sankey_data[column_list[1]].apply(
+                lambda i: dataset.labels[i])
+        except KeyError as e:
+            raise KeyError(
+                f"The value {e.args[0]} exists in the imagery but is not defined in the dataset.")
 
         return sankey_data[["source", "target", "value", "source_label", "target_label", "change"]]
 
-    # Figure out the max index that could be used for the data based on the number of unique classes and time periods
-    max_id = len(pd.unique(data.values.flatten())) * len(data.columns)
+    # Calculate the max index that will be needed based on the number of unique classes in all groups
+    max_id = sum([len(pd.unique(col)) for _, col in data.iteritems()])
+
     # Pre-allocate a list of labels that will be iteratively assigned labels up to the max id
     label = [None for i in range(max_id)]
 
@@ -181,14 +186,6 @@ def reformat(data, dataset=None, labels=None, palette=None):
         source += sankified.source.tolist()
         target += sankified.target.tolist()
         value += sankified.value.tolist()
-
-    # TODO: Refactor for efficiency (and because this is embarrasingly hacky).
-    # If the source and target contain different numbers of classes, there will be None's left in the pre-allocated
-    # label list because the max_id was too high. This will cause get_color to fail. To avoid this, the label generation
-    # system should be refactored. One solution would be to calculate max id based on the sum of the length of the
-    # unique source and target classes instead of unique cumulative classes.
-    while None in label:
-        label.remove(None)
 
     # Store the column label for the final target data
     node_labels += [end_label for i in range(len(pd.unique(sankified.target)))]
