@@ -20,6 +20,11 @@ pip install sankee
 ### Using a Premade Dataset
 `sankee` includes premade `Dataset` objects for common classified datasets in GEE. See [datasets](https://github.com/aazuspan/sankee#Datasets) for a detailed explanation.
 ```python
+import ee
+import sankee
+
+ee.Initialize()
+
 # Choose a premade dataset object contains band, label, and palette information for NLCD
 dataset = sankee.datasets.NLCD2016
 
@@ -46,22 +51,52 @@ plot = sankee.sankify(img_list, vegas, label_list, dataset, max_classes=4, title
 ### Using a Custom Dataset
 Datasets can also be manually defined for custom datasets. See [datasets](https://github.com/aazuspan/sankee#Datasets) for a detailed explanation.
 ```python
-band = "health"
+import ee
+import sankee
+
+ee.Initialize()
+
+# Load fire perimeters from MTBS data
+fires = ee.FeatureCollection("users/aazuspan/fires/mtbs_1984_2018")
+# Select the 2014 Happy Camp Complex fire perimeter in California
+fire = fires.filterMetadata("Fire_ID", "equals", "CA4179612337420140814")
+
+# Load imagery 1 year after fire and 5 years after fire
+immediate = ee.Image("LANDSAT/LC08/C01/T1_TOA/LC08_045031_20150718")
+recovery = ee.Image("LANDSAT/LC08/C01/T1_TOA/LC08_046031_20200807")
+
+# Calculate NDVI
+immediate_NDVI = immediate.normalizedDifference(["B5", "B4"])
+recovery_NDVI = recovery.normalizedDifference(["B5", "B4"])
+
+# Reclassify continuous NDVI values into classes of plant health
+immediate_class = ee.Image(1) \
+  .where(immediate_NDVI.lt(0.3), 0) \
+  .where(immediate_NDVI.gt(0.5), 2) \
+  .rename("health")
+
+recovery_class = ee.Image(1) \
+  .where(recovery_NDVI.lt(0.3), 0) \
+  .where(recovery_NDVI.gt(0.5), 2) \
+  .rename("health")
 
 # Specify the band name for the image
+band = "health"
+
+# Assign labels to the pixel values defined above
 labels = {
     0: "Unhealthy",
     1: "Moderate",
     2: "Healthy"
 }
-# Assign labels to each pixel value
+# Assign colors to the pixel values defined above
 palette = {
     0: "#e5f5f9",
     1: "#99d8c9",
     2: "#2ca25f"
 }
 
-# Select images (in this case, classified NDVI values before and after fire)
+# Define the images to use and create labels to describe them
 img_list = [immediate_class, recovery_class]
 label_list = ["Immediate", "Recovery"]
 
