@@ -13,9 +13,6 @@ class Dataset:
         self.labels = labels
         self.palette = palette
 
-        assert self.labels.keys() == self.palette.keys(
-        ), "Label keys must match palette keys!"
-
     def __repr__(self):
         return f"\n{self.title}\n{''.join(['-' for i in range(len(self.title))])}" \
             f"\nBand: {self.band}" \

@@ -9,15 +9,14 @@ Visualize classified time series data with interactive Sankey plots in Google Ea
 `sankee` provides a dead-simple API that combines the power of GEE and Plotly to visualize changes in land cover, plant health, burn severity, or any other classified imagery over a time series in a region of interst using interactive Sankey plots. Use a library of built-in datasets like NLCD or MODIS Land Cover for convenience or define your own custom datasets.
 
 ## Installation
-
-In progess...
+```
+pip install sankee
+```
 
 ## Requirements
 - An authenticated GEE Python environment ([offical guide](https://developers.google.com/earth-engine/guides/python_install))
-- `Numpy`, `Pandas`, `Plotly`, and `earthengine-api`
 
 ## Usage 
-
 ### Using a Premade Dataset
 `sankee` includes premade `Dataset` objects for common classified datasets in GEE. See [datasets](https://github.com/aazuspan/sankee#Datasets) for a detailed explanation.
 ```python
@@ -71,22 +70,6 @@ plot = sankee.sankify(img_list, fire, label_list, band=band, labels=labels, pale
 ```
 [![NDVI post-fire recover example Sankey plot](examples/NDVI.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/NDVI.html)
 
-
-### Separate Functions for Maximum Control
-`sankee.sankify` is a convenience function that wraps four separate functions.
-1. `sankee.sample`  
-    1. Generates `n` random samples within the region. 
-    2. Identify the image class at each time step in each sample.
-2. `sankee.clean`
-    1. Optionally filter out specific classes identified by `exclude`.
-    2. Optionally remove small classes to enforce `max_classes`.
-3. `sankee.reformat`
-    1. Calculate the relative frequency of each class transition at each time step.
-    2. Reshape the data for input into Plotly's Sankey API.
-4. `sankee.plot` 
-    1. Generate and return an interactive plot.
-
-For maximum control, each of these functions is available independently, allowing you store sampled data, use your own data, do your own data cleaning, etc.
 
 ### Datasets
 

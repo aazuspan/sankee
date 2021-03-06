@@ -2,6 +2,7 @@ import ee
 import pandas as pd
 import plotly.graph_objects as go
 
+from sankee.datasets import Dataset
 from sankee import utils
 
 # Temporary property name to store image labels in
@@ -13,14 +14,6 @@ def _label_images(image_list, label_list):
     Take a list of images and assign provided or auto-generated labels to each. Return the labeled images and the
     list of labels.
     """
-    if not label_list:
-        label_list = [i for i in range(len(image_list))]
-    elif not len(label_list) == len(image_list) > 1:
-        raise ValueError(
-            "Length of label list must match length of image list and be greater than zero.")
-    # Cast every element in label list to string since GEE can't handle that
-    label_list = [str(x) for x in label_list]
-
     # Assign a label to one image in a list of images
     def apply_label(img, img_list):
         img_list = ee.List(img_list)
@@ -64,7 +57,7 @@ def _extract_values(image_list, samples, band, scale):
     return sample_data
 
 
-def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, scale=None, seed=0):
+def _sample(image_list, region, dataset, label_list=None, n=100, scale=None, seed=0):
     """
     Randomly sample values of a list of images to quantify change over time.
 
@@ -84,9 +77,6 @@ def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, 
     :return pd.DataFrame: A dataframe in which each row represents as single sample point with the starting class
     in the "start" column and the ending class in the "end" column.
     """
-    if not band:
-        band = dataset.band
-
     # Apply labels to images
     labeled_images, label_list = _label_images(image_list, label_list)
 
@@ -94,23 +84,24 @@ def sample(image_list, region, dataset=None, band=None, label_list=None, n=100, 
     samples = ee.FeatureCollection.randomPoints(region, n, seed)
 
     # Extract image values at each sample point
-    sample_data = _extract_values(labeled_images, samples, band, scale)
+    sample_data = _extract_values(labeled_images, samples, dataset.band, scale)
 
     try:
         data = pd.DataFrame.from_dict(
             [feat["properties"] for feat in ee.Feature(sample_data).getInfo()["features"]])
     except ee.EEException as e:
-        # ee may raise an error if the band name isn't valid
-        if band in e.args[0]:
+        # ee may raise an error if the band name isn't valid. This is a bit of a hack to catch that since ee doesn't
+        # raise more specific errors.
+        if dataset.band in e.args[0]:
             raise ValueError(
-                f'"{band}" is not a valid band name. Check that the dataset band name exists for all images.')
+                f'"{dataset.band}" is not a valid band name. Check that the dataset band name exists for all images.')
         else:
             raise e
 
     return data[label_list]
 
 
-def reformat(data, dataset=None, labels=None, palette=None):
+def _reformat(data, dataset):
     """
     Take a dataframe of data representing classified sample points and return all parameters needed to generate a
     Sankey plot. This is done by looping through columns in groups of two representing start and end conditions and
@@ -168,8 +159,6 @@ def reformat(data, dataset=None, labels=None, palette=None):
     # Pre-allocate a list of labels that will be iteratively assigned labels up to the max id
     label = [None for i in range(max_id)]
 
-    dataset = utils.parse_dataset(dataset, labels, palette)
-
     node_labels = []
     link_labels = []
     source = []
@@ -218,7 +207,7 @@ def reformat(data, dataset=None, labels=None, palette=None):
     return (node_labels, link_labels, node_palette, link_palette, label, source, target, value)
 
 
-def clean(data, exclude=None, max_classes=None, dropna=True):
+def _clean(data, exclude=None, max_classes=None, dropna=True):
     """
     Perform some cleaning on data before plotting by excluding unwanted classes and limiting the number of classes.
 
@@ -238,7 +227,7 @@ def clean(data, exclude=None, max_classes=None, dropna=True):
     return data
 
 
-def plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=None):
+def _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=None):
     """
     Generate a Sankey plot of land cover change over an arbitrary number of time steps.
     """
@@ -278,11 +267,16 @@ def sankify(image_list, region, label_list=None, dataset=None, band=None, labels
     Perform sampling, data cleaning and reformatting, and generation of a Sankey plot of land cover change over time
     within a region.
     """
-    dataset = utils.parse_dataset(dataset, band, labels, palette)
-    data = sample(image_list, region, dataset, band=band, label_list=label_list,
-                  n=n, scale=scale, seed=seed)
+    dataset = utils.build_dataset(dataset, band, labels, palette)
+    label_list = utils.build_label_list(image_list, label_list)
+
+    utils.test_params(dataset, image_list, label_list)
+
+    data = _sample(image_list, region, dataset=dataset, label_list=label_list,
+                   n=n, scale=scale, seed=seed)
+
     utils.check_plot_params(data, dataset)
-    cleaned = clean(data, exclude, max_classes, dropna=dropna)
-    node_labels, link_labels, node_palette, link_palette, label, source, target, value = reformat(
+    cleaned = _clean(data, exclude, max_classes, dropna=dropna)
+    node_labels, link_labels, node_palette, link_palette, label, source, target, value = _reformat(
         cleaned, dataset)
-    return plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)
+    return _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)
