@@ -94,7 +94,8 @@ def build_dataset(dataset=None, band="", labels=None, palette=None):
         if palette:
             dataset.palette = palette
     else:
-        dataset = Dataset("", band, labels, palette)
+        dataset = Dataset(title="", collection=None, band=band,
+                          labels=labels, palette=palette)
 
     return dataset
 

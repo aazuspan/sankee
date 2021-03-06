@@ -1,14 +1,17 @@
 from enum import Enum
+import ee
+import pandas as pd
 
 
 class Dataset:
-    def __init__(self, title, band, labels, palette):
+    def __init__(self, title, collection, band, labels, palette):
         """
         :param str band: The name of the image band that contains class values.
         :param dict labels: A dictionary matching class values to their corresponding labels.
         :param dict palette: A dictioanry matching class values to their corresponding hex colors.
         """
         self.title = title
+        self.collection = collection
         self.band = band
         self.labels = labels
         self.palette = palette
@@ -16,12 +19,20 @@ class Dataset:
     def __repr__(self):
         return f"\n{self.title}\n{''.join(['-' for i in range(len(self.title))])}" \
             f"\nBand: {self.band}" \
-            f"\nKeys: {self.keys()}" \
+            f"\nKeys: {self.keys}" \
             f"\nLabels: {self.labels}" \
             f"\nPalette: {self.palette}"
 
+    @property
     def keys(self):
         return list(self.labels.keys())
+
+    @property
+    def df(self):
+        """
+        Return a Pandas dataframe describing the dataset parameters
+        """
+        return pd.DataFrame({"id": self.keys, "label": self.labels.values(), "color": self.palette.values()})
 
     def get_color(self, label):
         """
@@ -30,9 +41,25 @@ class Dataset:
         label_key = [k for k, v in self.labels.items() if v == label][0]
         return self.palette[label_key]
 
+    def get_images(self, max_images=20):
+        """
+        List the names of the first n images in the dataset collection up to max_images
+        """
+        img_list = []
+        for img in self.collection.toList(max_images).getInfo():
+            try:
+                img_list.append(img["id"])
+            except KeyError:
+                pass
+
+        if len(img_list) == max_images:
+            img_list.append('...')
+        return img_list
+
 
 class datasets(Dataset, Enum):
-    NLCD2016 = ("NLCD 2016",
+    NLCD2016 = ("National Land Cover Database 2016",
+                ee.ImageCollection("USGS/NLCD"),
                 "landcover", {
                     1: "No data",
                     11: "Open water",
@@ -79,7 +106,8 @@ class datasets(Dataset, Enum):
                     95: "#6c9fb8"
                 })
 
-    MODIS_LC_TYPE1 = ("MODIS LC Type 1",
+    MODIS_LC_TYPE1 = ("MODIS IGBP Classification",
+                      ee.ImageCollection("MODIS/006/MCD12Q1"),
                       "LC_Type1",
                       {
                           1: "Evergreen conifer forest",
@@ -121,7 +149,8 @@ class datasets(Dataset, Enum):
                       }
                       )
 
-    MODIS_LC_TYPE2 = ("MODIS LC Type 2",
+    MODIS_LC_TYPE2 = ("MODIS UMD Classification",
+                      ee.ImageCollection("MODIS/006/MCD12Q1"),
                       "LC_Type2",
                       {
                           0: "Water",
@@ -161,7 +190,8 @@ class datasets(Dataset, Enum):
                       }
                       )
 
-    MODIS_LC_TYPE3 = ("MODIS LC Type 3",
+    MODIS_LC_TYPE3 = ("MODIS LAI Classification",
+                      ee.ImageCollection("MODIS/006/MCD12Q1"),
                       "LC_Type3",
                       {
                           0: "Water",
@@ -191,7 +221,9 @@ class datasets(Dataset, Enum):
                       }
                       )
 
-    CGLS_LC100 = ("CGLS-LC100",
+    CGLS_LC100 = ("Copernicus Global Land Service LC100",
+                  ee.ImageCollection(
+                      "COPERNICUS/Landcover/100m/Proba-V-C3/Global"),
                   "discrete_classification",
                   {
                       0: "Unknown",
