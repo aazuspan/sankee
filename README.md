@@ -6,7 +6,7 @@ Visualize classified time series data with interactive Sankey plots in Google Ea
 
 
 ## Description
-`sankee` provides a dead-simple API that combines the power of GEE and Plotly to visualize changes in land cover, plant health, burn severity, or any other classified imagery over a time series in a region of interst using interactive Sankey plots. Use a library of built-in datasets like NLCD or MODIS Land Cover for convenience or define your own custom datasets.
+`sankee` provides a dead-simple API that combines the power of [GEE](https://github.com/google/earthengine-api) and [Plotly](https://github.com/plotly/plotly.py) to visualize changes in land cover, plant health, burn severity, or any other classified imagery over a time series in a region of interst using interactive Sankey plots. Use a library of built-in datasets like NLCD, MODIS Land Cover, or CGLS for convenience or define your own custom datasets for flexibility.
 
 ## Installation
 ```
@@ -16,9 +16,9 @@ pip install sankee
 ## Requirements
 - An authenticated GEE Python environment ([offical guide](https://developers.google.com/earth-engine/guides/python_install))
 
-## Usage 
+## Quick start 
 ### Using a Premade Dataset
-`sankee` includes premade `Dataset` objects for common classified datasets in GEE. See [datasets](https://github.com/aazuspan/sankee#Datasets) for a detailed explanation.
+Datasets in `sankee` are used to apply labels and colors to classified imagery. `sankee` includes premade `Dataset` objects for common classified datasets in GEE like NLCD, MODIS land cover, and CGLS. See [datasets](https://github.com/aazuspan/sankee#Datasets) for a detailed explanation.
 ```python
 import ee
 import sankee
@@ -30,8 +30,8 @@ dataset = sankee.datasets.NLCD2016
 
 # Build a list of images
 img_list = [ee.Image(f"USGS/NLCD/NLCD2001"), ee.Image(f"USGS/NLCD/NLCD2016")]
-# Build a matching list of labels for the images
-label_list = [2001, 2016]
+# Build a matching list of labels for the images (optional)
+label_list = ["2001", "2016"]
 
 # Define an area of interest
 vegas = ee.Geometry.Polygon(
@@ -49,7 +49,7 @@ plot = sankee.sankify(img_list, vegas, label_list, dataset, max_classes=4, title
 [![NLCD Las Vegas urbanization example Sankey plot](examples/NLCD.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/NLCD.html)
 
 ### Using a Custom Dataset
-Datasets can also be manually defined for custom datasets. See [datasets](https://github.com/aazuspan/sankee#Datasets) for a detailed explanation.
+Datasets can also be manually defined for custom datasets. In this example, we'll classify 1-year and 5-year post-fire Landsat imagery using NDVI and visualize plant recovery using `sankee`.
 ```python
 import ee
 import sankee
