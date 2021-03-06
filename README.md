@@ -112,10 +112,11 @@ Datasets in `sankee` define how classified image values are labeled and colored 
 
 Any classified image can be visualized by manually defining a band, palette, and label. However, premade datasets are included for convenience in the `sankee.datasets` module. To access a dataset, use its name, such as `sankee.datasets.NLCD2016`. To get a list of all dataset names, run `sankee.datasets.names()`. Datasets can also be accessed using `sankee.datasets.get()` which returns a list of `Dataset` objects that can be selecting by indexing.
 
-## API
+# API
+## Core function
 ### sankee.sankify(image_list, region, *label_list, dataset, band, labels, palette, exclude, max_classes, n, title, scale, seed, dropna*)
 
-Randomly sample a list of images to generate a Sankey plot for visualizing change in classified pixel values over time.
+Generate `n` random samples points within a `region` and extract classified pixel values from each image in an `image list`. Arrange the sample data into a Sankey plot that can be used to visualize changes in image classifications.
 
 __Arguments__  
 - image_list (list)
@@ -148,9 +149,10 @@ __Arguments__
   - If the `region` extends into areas that contain no data in any image, some samples may have null values. If `dropna` is True, those samples will be dropped. This may lead to fewer samples being returned than were requested by `n`. 
 
 __Returns__
-- A Plotly Sankey plot object.
+- A `Plotly` Sankey plot object.
 
 ---
+## Dataset functions
 ### sankee.datasets.names()
 
 Get a list of supported dataset names. Names can be used to access datasets using `sankee.datasets.{dataset_name}`.
@@ -160,7 +162,7 @@ __Arguments__
 
 __Returns__ (list)
 - A list of strings for supported dataset names.
----
+
 ### sankee.datasets.get(*i*)
 Get a list of supported `sankee.datasets.Dataset` objects.  
 __Arguments__
@@ -169,3 +171,29 @@ __Arguments__
 
 __Returns__ (list)
 - A list of supported `sankee.datasets.Dataset` objects. If `i` is provided, only one object is returned.
+
+### sankee.datasets.Dataset.get_images(*max_images*)
+Get a list of image names in the collection of a specific dataset.  
+__Arguments__
+- *max_images (int, default: 20)*
+  - The max number of images to return.  
+
+__Returns__ (list)
+- A list of image names that can be used to load `ee.Image` objects.
+
+__Example__
+```python
+sankee.datasets.NLCD2016.get_images(3)
+
+>> ['USGS/NLCD/NLCD1992', 'USGS/NLCD/NLCD2001', 'USGS/NLCD/NLCD2001_AK', '...']
+```
+---
+## Dataset properties and attributes
+### sankee.datasets.Dataset.collection
+- Return the image collection associated with the dataset.
+
+### sankee.datasets.Dataset.df
+- Return a Pandas dataframe describing the classes, labels, and colors associated with the dataset.
+
+### sankee.datasets.Dataset.id
+- Return the system ID of the image collection.

@@ -16,13 +16,8 @@ class Dataset:
         self.palette = palette
 
     def __repr__(self):
-        title = self.title
+        return f"<sankee.datasets.Dataset> {self.title}" \
 
-        return f"\n{title}\n{''.join(['-' for i in range(len(title))])}" \
-            f"\nBand: {self.band}" \
-            f"\nKeys: {self.keys}" \
-            f"\nLabels: {self.labels}" \
-            f"\nPalette: {self.palette}"
 
     @property
     def keys(self):
