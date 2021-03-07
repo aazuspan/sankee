@@ -116,8 +116,7 @@ setup(
     #
     #   py_modules=["my_module"],
     #
-    packages=find_packages(
-        exclude=["docs", "tests", ".git-hooks"]),  # Required
+    packages=find_packages(exclude=["docs", "tests", ".git-hooks"]),  # Required
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. If you
@@ -131,16 +130,20 @@ setup(
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
+        "attrs==20.3.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+        "backcall==0.2.0",
         "cachetools==4.2.1; python_version ~= '3.5'",
         "certifi==2020.12.5",
         "cffi==1.14.5",
         "chardet==4.0.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'",
+        "colorama==0.4.4; sys_platform == 'win32'",
+        "decorator==4.4.2",
         "earthengine-api==0.1.254",
         "future==0.18.2; python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-        "google-api-core==1.26.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
-        "google-api-python-client==1.12.8; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
-        "google-auth==1.27.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
-        "google-auth-httplib2==0.0.4",
+        "google-api-core==1.26.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
+        "google-api-python-client==1.12.8",
+        "google-auth==1.27.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
+        "google-auth-httplib2==0.1.0",
         "google-cloud-core==1.6.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
         "google-cloud-storage==1.36.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5'",
         "google-crc32c==1.1.2; python_version >= '3.5'",
@@ -149,23 +152,41 @@ setup(
         "httplib2==0.19.0",
         "httplib2shim==0.0.3",
         "idna==2.10; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+        "ipykernel==5.5.0",
+        "ipython==7.21.0; python_version >= '3.7'",
+        "ipython-genutils==0.2.0",
+        "jedi==0.18.0; python_version >= '3.6'",
+        "jsonschema==3.2.0",
+        "jupyter-client==6.1.11; python_version >= '3.5'",
+        "jupyter-core==4.7.1; python_version >= '3.6'",
+        "nbformat==5.1.2",
         "numpy==1.20.1",
         "packaging==20.9; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
         "pandas==1.2.3",
+        "parso==0.8.1; python_version >= '3.6'",
+        "pickleshare==0.7.5",
         "plotly==4.14.3",
-        "protobuf==3.15.4",
+        "prompt-toolkit==3.0.16; python_full_version >= '3.6.1'",
+        "protobuf==3.15.5",
         "pyasn1==0.4.8",
         "pyasn1-modules==0.2.8",
         "pycparser==2.20; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+        "pygments==2.8.1; python_version >= '3.5'",
         "pyparsing==2.4.7; python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+        "pyrsistent==0.17.3; python_version >= '3.5'",
         "python-dateutil==2.8.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
         "pytz==2021.1",
+        "pywin32==300; sys_platform == 'win32'",
+        "pyzmq==22.0.3; python_version >= '3.6'",
         "requests==2.25.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'",
         "retrying==1.3.3",
         "rsa==4.7.2; python_version >= '3.6'",
         "six==1.15.0; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
+        "tornado==6.1; python_version >= '3.5'",
+        "traitlets==5.0.5; python_version >= '3.7'",
         "uritemplate==3.0.1; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
         "urllib3==1.26.3; python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4' and python_version < '4'",
+        "wcwidth==0.2.5",
     ],  # Optional
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"

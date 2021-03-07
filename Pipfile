@@ -7,11 +7,12 @@ name = "pypi"
 numpy = "~=1.20.1"
 pandas = "~=1.2.2"
 plotly = "~=4.14.3"
-earthengine-api = "~=0.1.252"
-
-[dev-packages]
+earthengine-api = "~=0.1.254"
 ipykernel = "*"
 nbformat = ">=4.2.0"
+google-api-python-client = "~=1.12.8"
+
+[dev-packages]
 pipenv-setup = "*"
 bumpversion = "*"
 twine = "*"
