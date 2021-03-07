@@ -9,6 +9,6 @@ echo "Building binaries and wheel..."
 pipenv run python setup.py sdist bdist_wheel
 
 echo "Uploading to PyPI"
-pipenv run twine upload
+pipenv run twine upload dist/*
 
 exit 0
