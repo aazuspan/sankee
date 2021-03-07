@@ -55,6 +55,10 @@ TEST_PALETTE = {
     16: "#f9ffa4",
     17: "#1c0dff",
 }
+TEST_DATA = pd.DataFrame({
+    "start": [1, 1, 1, 2, 2, 4],
+    "end": [1, 1, 1, 2, 3, 4],
+})
 
 
 class TestSankee(unittest.TestCase):
@@ -62,32 +66,36 @@ class TestSankee(unittest.TestCase):
         """
         Test that NA values will be dropped by _clean
         """
-        test_input = pd.DataFrame({0: [0.0, np.nan], 1: [1, 2]})
+        test_input = pd.DataFrame({0: [0.0, np.nan, 2.0], 1: [1, 2, 3]})
         cleaned = sankee.core._clean(test_input, dropna=True)
-        target = pd.DataFrame({0: [0.0], 1: [1]})
+        target = pd.DataFrame({0: [0.0, 2.0], 1: [1, 3]})
 
-        assert_frame_equal(cleaned, target)
+        self.assertTrue(np.array_equal(cleaned, target))
 
     def test_exclude(self):
         """
         Test that values are correctly excluded by _clean
         """
-        test_input = pd.DataFrame({0: [0, 3], 1: [1, 2]})
-        cleaned = sankee.core._clean(test_input, exclude=[3])
-        target = pd.DataFrame({0: [0], 1: [1]})
+        cleaned = sankee.core._clean(TEST_DATA, exclude=[2])
+        target = pd.DataFrame({
+            "start": [1, 1, 1, 4],
+            "end": [1, 1, 1, 4],
+        })
 
-        assert_frame_equal(cleaned, target)
+        self.assertTrue(np.array_equal(cleaned, target))
 
     def test_max_classes(self):
         """
         Test that small classes are removed to match max_classes by _clean
         """
-        test_input = pd.DataFrame({0: [0, 0, 1, 1, 2], 1: [0, 0, 1, 1, 2]})
         cleaned = sankee.core._clean(
-            test_input, max_classes=2).reset_index(drop=True)
-        target = pd.DataFrame(
-            {0: [0, 0, 1, 1], 1: [0, 0, 1, 1]}).reset_index(drop=True)
-        assert_frame_equal(cleaned, target)
+            TEST_DATA, max_classes=2)
+        target = pd.DataFrame({
+            "start": [1, 1, 1, 2],
+            "end": [1, 1, 1, 2],
+        })
+
+        self.assertTrue(np.array_equal(cleaned, target))
 
     def test_missing_band(self):
         """
@@ -113,9 +121,92 @@ class TestSankee(unittest.TestCase):
             sankee.core.sankify(TEST_IMG_LIST, TEST_REGION, TEST_LABEL_LIST,
                                 dataset=None, band=TEST_BAND, labels=TEST_LABELS, palette=None)
 
-# TODO:
-# Test uneven target and source classes
-# Test reformatting using an example data input
+    def test_mismatched_label_list(self):
+        """
+        If the label list is a different length than the image list, a ValueError should be raised.
+        """
+        with self.assertRaises(ValueError):
+            sankee.core.sankify(TEST_IMG_LIST, TEST_REGION, ["2001", "2010", "2020"],
+                                dataset=TEST_DATASET)
+        with self.assertRaises(ValueError):
+            sankee.core.sankify(TEST_IMG_LIST, TEST_REGION, ["2001"],
+                                dataset=TEST_DATASET)
+
+    def test_build_dataset(self):
+        """
+        Any parameters supplied to build dataset should overwrite the dataset parameters.
+        """
+        test_band = "test"
+        test_labels = {0: "first label", 1: "second label"}
+        test_palette = {0: "first color", 2: "second color"}
+        dataset = sankee.utils.build_dataset(
+            dataset=TEST_DATASET, band=test_band, labels=test_labels, palette=test_palette)
+
+        self.assertEqual(dataset.band, test_band)
+        self.assertEqual(dataset.labels, test_labels)
+        self.assertEqual(dataset.palette, test_palette)
+
+    def test_bad_band(self):
+        """
+        If a band name is passed to _sample and it's not in the image, a ValueError should be raised.
+        """
+        dataset = sankee.utils.build_dataset(
+            dataset=TEST_DATASET, band="bad_band")
+
+        with self.assertRaises(ValueError):
+            sankee.core._sample(TEST_IMG_LIST, TEST_REGION,
+                                dataset, TEST_LABEL_LIST)
+
+    def test_missing_label_list(self):
+        """
+        If no label list is passed to _label_images, a sequential numeric label list should be created
+        """
+        _, label_list = sankee.core._label_images(
+            TEST_IMG_LIST, label_list=None)
+        target = [0, 1]
+        self.assertEqual(label_list, target)
+
+    def test_dataset_unchanged_by_build(self):
+        """
+        The utils.build_dataset function should not permanently affect a dataset's attributes when it uses it to build a 
+        new dataset.
+        """
+        start_band = TEST_DATASET.band
+
+        sankee.utils.build_dataset(dataset=TEST_DATASET, band="new_band")
+
+        end_band = TEST_DATASET.band
+
+        self.assertEqual(start_band, end_band)
+
+    def test_reformat(self):
+        """
+        Test that mock table data is correctly reformatted for Sankey plotting.
+        """
+        node_labels, link_labels, node_palette, link_palette, label, source, target, value = sankee.core._reformat(
+            TEST_DATA, TEST_DATASET)
+
+        self.assertEqual(
+            node_labels, ["start", "start", "start", "end", "end", "end", "end"])
+        self.assertEqual(link_labels, [
+            r'100% of Evergreen conifer forest remained Evergreen conifer forest',
+            r'50% of Evergreen broadleaf forest remained Evergreen broadleaf forest',
+            r'50% of Evergreen broadleaf forest became Deciduous conifer forest',
+            r'100% of Deciduous broadleaf forest remained Deciduous broadleaf forest'
+        ]
+        )
+        self.assertEqual(node_palette, [
+                         '#086a10', '#dcd159', '#78d203', '#086a10', '#dcd159', '#54a708', '#78d203'])
+        self.assertEqual(
+            link_palette, ['#086a10', '#dcd159', '#dcd159', '#78d203'])
+        self.assertEqual(label, [
+            'Evergreen conifer forest', 'Evergreen broadleaf forest', 'Deciduous broadleaf forest',
+            'Evergreen conifer forest', 'Evergreen broadleaf forest', 'Deciduous conifer forest',
+            'Deciduous broadleaf forest']
+        )
+        self.assertEqual(source, [0, 1, 1, 2])
+        self.assertEqual(target, [3, 4, 5, 6])
+        self.assertEqual(value, [3, 1, 1, 1])
 
 
 if __name__ == "__main__":
