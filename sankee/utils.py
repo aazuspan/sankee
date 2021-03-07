@@ -70,9 +70,8 @@ def drop_classes(data, max_classes, metric="area"):
     """
     class_counts = data.melt().groupby("value").size().reset_index(name="n")
     largest_classes = class_counts.sort_values(
-        by="n", ascending=False).value[0:max_classes].tolist()
-
-    dropped_data = data[data.isin(largest_classes).any(axis=1)]
+        by="n", ascending=False).value[:max_classes].tolist()
+    dropped_data = data[data.isin(largest_classes).all(axis=1)]
 
     return dropped_data
 
