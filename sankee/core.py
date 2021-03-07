@@ -14,6 +14,9 @@ def _label_images(image_list, label_list):
     Take a list of images and assign provided or auto-generated labels to each. Return the labeled images and the
     list of labels.
     """
+    if not label_list:
+        label_list = [i for i in range(len(image_list))]
+
     # Assign a label to one image in a list of images
     def apply_label(img, img_list):
         img_list = ee.List(img_list)
@@ -74,7 +77,7 @@ def _sample(image_list, region, dataset, label_list=None, n=100, scale=None, see
     :param int scale: The scale to sample point statistics at. Generally, this should be the nominal scale of the
     start and end image.
     :param int seed: Random seed used to generate sample points.
-    :return pd.DataFrame: A dataframe in which each row represents as single sample point and columns represent the 
+    :return pd.DataFrame: A dataframe in which each row represents as single sample point and columns represent the
     class of that point in each image of the image list.
     """
     # Apply labels to images
@@ -211,7 +214,7 @@ def _clean(data, exclude=None, max_classes=None, dropna=True):
     """
     Perform some cleaning on data before plotting by excluding unwanted classes and limiting the number of classes.
 
-    :param pd.DataFrame data: A dataframe in which each row represents as single sample point and columns represent the 
+    :param pd.DataFrame data: A dataframe in which each row represents as single sample point and columns represent the
     class of that point in each image of an image list.
     :param list exclude: A list of class values to remove from the dataframe.
     :param int max_classes: The maximum number of unique classes to include in the dataframe. If more classes are present,

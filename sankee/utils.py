@@ -78,25 +78,22 @@ def drop_classes(data, max_classes, metric="area"):
 
 def build_dataset(dataset=None, band="", labels=None, palette=None):
     """
-    Take either a dataset or some combination of band, labels, and palette and return a dataset. If a dataset is
-    provided, it will be returned unchanged. 
+    Take a dataset and/or some combination of band, labels, and palette and return a dataset. If a dataset is
+    provided, a copy will be returned with any provided parameters replaced.
     """
     labels = labels if labels else {}
     palette = palette if palette else {}
 
     # Replace any dataset parameters with provided parameters
     if dataset:
-        if band:
-            dataset.band = band
-        if labels:
-            dataset.labels = labels
-        if palette:
-            dataset.palette = palette
-    else:
-        dataset = Dataset(collection_name=None, band=band,
-                          labels=labels, palette=palette)
+        band = band if band else dataset.band
+        labels = labels if labels else dataset.labels
+        palette = palette if palette else dataset.palette
 
-    return dataset
+    built = Dataset(collection_name=None, band=band,
+                    labels=labels, palette=palette)
+
+    return built
 
 
 def build_label_list(image_list, label_list=None):
