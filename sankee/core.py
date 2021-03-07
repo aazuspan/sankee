@@ -74,8 +74,8 @@ def _sample(image_list, region, dataset, label_list=None, n=100, scale=None, see
     :param int scale: The scale to sample point statistics at. Generally, this should be the nominal scale of the
     start and end image.
     :param int seed: Random seed used to generate sample points.
-    :return pd.DataFrame: A dataframe in which each row represents as single sample point with the starting class
-    in the "start" column and the ending class in the "end" column.
+    :return pd.DataFrame: A dataframe in which each row represents as single sample point and columns represent the 
+    class of that point in each image of the image list.
     """
     # Apply labels to images
     labeled_images, label_list = _label_images(image_list, label_list)
@@ -211,16 +211,18 @@ def _clean(data, exclude=None, max_classes=None, dropna=True):
     """
     Perform some cleaning on data before plotting by excluding unwanted classes and limiting the number of classes.
 
-    :param int max_classes: The maximum number of unique classes to include in the plot. If more classes are present,
-    the unimportant classes will be omitted from the plot. If max_classes is None, no classes will be dropped.
-    :param list exclude: A list of class values to remove from the plot.
-    :param bool dropna: If true, samples with no class data in either image will be dropped. If false, these samples
-    will be returned but may cause plotting to fail.
+    :param pd.DataFrame data: A dataframe in which each row represents as single sample point and columns represent the 
+    class of that point in each image of an image list.
+    :param list exclude: A list of class values to remove from the dataframe.
+    :param int max_classes: The maximum number of unique classes to include in the dataframe. If more classes are present,
+    the smallest classes will be omitted from the plot. If max_classes is None, no classes will be dropped.
+    :param bool dropna: If true, samples with no class data in any column will be dropped.
+    :return pd.DataFrame: The input dataframe with cleaning applied.
     """
     if dropna:
         data = data.dropna()
     if exclude:
-        data = data[~data.isin(exclude)].dropna()
+        data = data[~data.isin(exclude).any(axis=1)]
     if max_classes:
         data = utils.drop_classes(data, max_classes)
 
