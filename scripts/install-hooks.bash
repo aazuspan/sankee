@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Run this script once to tell Git where to find hooks.
 
