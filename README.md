@@ -1,20 +1,38 @@
 # sankee
-Visualize classified time series data with interactive Sankey plots in Google Earth Engine
+Visualize changes in classified time series data with interactive Sankey plots in Google Earth Engine
 
-[![MODIS glacier loss example Sankey plot](examples/MODIS.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/MODIS.html)
+![Sankee example showing grassland expansion in the Nile Delta](examples/demo.gif)
 
+
+## Contents
+- [Description](https://github.com/aazuspan/sankee#Description)
+- [Installation](https://github.com/aazuspan/sankee#Installation)
+  - [Using Pip](https://github.com/aazuspan/sankee#Using-Pip)
+  - [Using Pipenv](https://github.com/aazuspan/sankee#Using-Pipenv)
+- [Requirements](https://github.com/aazuspan/sankee#Requirements)
+- [Quick Start](https://github.com/aazuspan/sankee#Quick-Start)
+  - [Using a Premade Dataset](https://github.com/aazuspan/sankee#Using-a-Premade-Dataset)
+  - [Using a Custom Dataset](https://github.com/aazuspan/sankee#Using-a-Custom-Dataset)
+- [Features](https://github.com/aazuspan/sankee#Features)
+  - [Modular Datasets](https://github.com/aazuspan/sankee#Modular-Datasets)
+  - [Integration with geemap](https://github.com/aazuspan/sankee#Integration-with-geemap)
+  - [Flexible Time Series](https://github.com/aazuspan/sankee#Flexible-Time-Series)
+- [API](https://github.com/aazuspan/sankee#API)
+- [Contributing](https://github.com/aazuspan/sankee#Contributing)
 
 
 ## Description
-`sankee` provides a dead-simple API that combines the power of [GEE](https://github.com/google/earthengine-api) and [Plotly](https://github.com/plotly/plotly.py) to visualize changes in land cover, plant health, burn severity, or any other classified imagery over a time series in a region of interst using interactive Sankey plots. Use a library of built-in datasets like NLCD, MODIS Land Cover, or CGLS for convenience or define your own custom datasets for flexibility.
+`sankee` provides a dead-simple API that combines the power of [GEE](https://github.com/google/earthengine-api) and [Plotly](https://github.com/plotly/plotly.py) to visualize changes in land cover, plant health, burn severity, or any other classified imagery over a time series in a region of interst using interactive Sankey plots. Use a library of built-in datasets like NLCD, MODIS Land Cover, or CGLS for convenience or define your own custom datasets for flexibility. 
+
+`sankee` works by randomly sampling points in a time series of classified imagery to visualize how cover types changed over time.
 
 ## Installation
-### Using pip
+### Using Pip
 ```
 pip install sankee
 ```
 
-### Using pipenv
+### Using Pipenv
 Pipenv can be used to create an isolated environment for running `sankee`. The following commands set up the environment and create a kernel so that you can run a notebook from it.
 ```sh
 pip install pipenv
@@ -27,9 +45,9 @@ python -m ipykernel install --user --name=my-virtualenv-name
 ## Requirements
 - An authenticated GEE Python environment ([offical guide](https://developers.google.com/earth-engine/guides/python_install))
 
-## Quick start 
+## Quick Start 
 ### Using a Premade Dataset
-Datasets in `sankee` are used to apply labels and colors to classified imagery. `sankee` includes premade `Dataset` objects for common classified datasets in GEE like NLCD, MODIS land cover, and CGLS. See [datasets](https://github.com/aazuspan/sankee#Datasets) for a detailed explanation.
+Datasets in `sankee` are used to apply labels and colors to classified imagery (eg. a value of 42 in an NLCD 2016 image should be labeled "Evergeen forest" and colored green). `sankee` includes premade `Dataset` objects for common classified datasets in GEE like NLCD, MODIS land cover, and CGLS. See [datasets](https://github.com/aazuspan/sankee#Modular-Datasets) for a detailed explanation.
 ```python
 import ee
 import sankee
@@ -60,7 +78,7 @@ plot = sankee.sankify(img_list, vegas, label_list, dataset, max_classes=4, title
 [![NLCD Las Vegas urbanization example Sankey plot](examples/NLCD.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/NLCD.html)
 
 ### Using a Custom Dataset
-Datasets can also be manually defined for custom datasets. In this example, we'll classify 1-year and 5-year post-fire Landsat imagery using NDVI and visualize plant recovery using `sankee`.
+Datasets can also be manually defined for custom images. In this example, we'll classify 1-year and 5-year post-fire Landsat imagery using NDVI and visualize plant recovery using `sankee`.
 ```python
 import ee
 import sankee
@@ -114,19 +132,42 @@ label_list = ["Immediate", "Recovery"]
 # Generate your Sankey plot
 plot = sankee.sankify(img_list, fire, label_list, band=band, labels=labels, palette=palette, scale=20)
 ```
-[![NDVI post-fire recover example Sankey plot](examples/NDVI.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/NDVI.html)
+[![NDVI post-fire recovery example Sankey plot](examples/NDVI.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/NDVI.html)
 
+## Features
+### Modular Datasets
 
-### Datasets
-
-Datasets in `sankee` define how classified image values are labeled and colored when plotting (eg. a value of 42 in an NLCD 2016 image should be labeled "Evergeen forest" and colored green). `label` and `palette` arguments for `sankee` functions can be manually provided as dictionaries where pixel values are keys and labels and colors are values. Every value in the image __must__ have a corresponding color and label. Datasets also define the `band` name in the image in which classified values are found.
+Datasets in `sankee` define how classified image values are labeled and colored when plotting. `label` and `palette` arguments for `sankee` functions can be manually provided as dictionaries where pixel values are keys and labels and colors are values. Every value in the image __must__ have a corresponding color and label. Datasets also define the `band` name in the image in which classified values are found.
 
 Any classified image can be visualized by manually defining a band, palette, and label. However, premade datasets are included for convenience in the `sankee.datasets` module. To access a dataset, use its name, such as `sankee.datasets.NLCD2016`. To get a list of all dataset names, run `sankee.datasets.names()`. Datasets can also be accessed using `sankee.datasets.get()` which returns a list of `Dataset` objects that can be selecting by indexing.
 
-### Integrating with geemap
-[geemap](https://github.com/giswqs/geemap) is a great tool for exploring changes in GEE imagery before creating plots with `sankee`. Integration is quick and easy. Just use `geemap` like you normally would, and pass the images and features to `sankee` for plotting.
+```python
+# List all sankee built-in datasets
+sankee.datasets.names()
 
-![Example geemap usage](examples/geemap_demo.gif)
+>> ['NLCD2016',
+    'MODIS_LC_TYPE1',
+    'MODIS_LC_TYPE2',
+    'MODIS_LC_TYPE3',
+    'CGLS_LC100']
+
+# Preview a list of available images belonging to one dataset
+sankee.datasets.CGLS_LC100.get_images(3)
+
+>> ['COPERNICUS/Landcover/100m/Proba-V-C3/Global/2015',
+    'COPERNICUS/Landcover/100m/Proba-V-C3/Global/2016',
+    'COPERNICUS/Landcover/100m/Proba-V-C3/Global/2017',
+    '...']
+```
+
+### Flexible Time Series
+`sankee` can handle any length of time series. The number of images will determine the number of time steps in the series. The example below shows a three-image time series.
+
+[![MODIS glacier loss example Sankey plot](examples/MODIS.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/MODIS.html)
+
+### Integration with geemap
+
+[geemap](https://github.com/giswqs/geemap) is a great tool for exploring changes in GEE imagery before creating plots with `sankee`. Integration is quick and easy. Just use `geemap` like you normally would, and pass the images and feature geometries to `sankee` for plotting. The example at the top of the page shows `sankee` can be used with `geemap`.
 
 # API
 ## Core function
@@ -213,3 +254,9 @@ sankee.datasets.NLCD2016.get_images(3)
 
 ### sankee.datasets.Dataset.id
 - Return the system ID of the image collection.
+
+## Contributing
+If you find bugs or have feature requests, please open an issue!
+
+---
+[Top](https://github.com/aazuspan/sankee)
