@@ -15,8 +15,8 @@ Visualize changes in classified time series data with interactive Sankey plots i
   - [Using a Custom Dataset](https://github.com/aazuspan/sankee#Using-a-Custom-Dataset)
 - [Features](https://github.com/aazuspan/sankee#Features)
   - [Modular Datasets](https://github.com/aazuspan/sankee#Modular-Datasets)
-  - [Integration with geemap](https://github.com/aazuspan/sankee#Integration-with-geemap)
   - [Flexible Time Series](https://github.com/aazuspan/sankee#Flexible-Time-Series)
+  - [Integration with geemap](https://github.com/aazuspan/sankee#Integration-with-geemap)
 - [API](https://github.com/aazuspan/sankee#API)
 - [Contributing](https://github.com/aazuspan/sankee#Contributing)
 
@@ -259,4 +259,4 @@ sankee.datasets.NLCD2016.get_images(3)
 If you find bugs or have feature requests, please open an issue!
 
 ---
-[Top](https://github.com/aazuspan/sankee)
+[Top](https://github.com/aazuspan/sankee#sankee)
