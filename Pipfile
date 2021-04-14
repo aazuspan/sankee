@@ -10,7 +10,6 @@ nbformat = ">=4.2.0"
 numpy = "*"
 pandas = "*"
 plotly = "*"
-pywin32 = {sys_platform = "== 'win32'"}
 
 [dev-packages]
 bumpversion = "*"
