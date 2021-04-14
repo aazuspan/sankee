@@ -1,5 +1,9 @@
 # sankee
 
+![](https://img.shields.io/conda/vn/conda-forge/sankee?style=flat-square)
+![](https://img.shields.io/pypi/v/sankee?style=flat-square)
+![](https://img.shields.io/github/license/aazuspan/sankee?style=flat-square)
+
 Visualize changes in classified time series data with interactive Sankey plots in Google Earth Engine
 
 ![Sankee example showing grassland expansion in the Nile Delta](examples/demo.gif)
