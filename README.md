@@ -1,8 +1,8 @@
 # sankee
 
-![](https://img.shields.io/conda/vn/conda-forge/sankee?style=flat-square)
-![](https://img.shields.io/pypi/v/sankee?style=flat-square)
-![](https://img.shields.io/github/license/aazuspan/sankee?style=flat-square)
+[![conda-forge link](https://img.shields.io/conda/vn/conda-forge/sankee?style=flat-square)](https://anaconda.org/conda-forge/sankee)
+[![conda-forge link](https://img.shields.io/pypi/v/sankee?style=flat-square)](https://pypi.org/project/sankee)
+[![license link](https://img.shields.io/github/license/aazuspan/sankee?style=flat-square)](https://opensource.org/licenses/GPL-3.0)
 
 Visualize changes in classified time series data with interactive Sankey plots in Google Earth Engine
 
