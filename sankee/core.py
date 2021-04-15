@@ -9,14 +9,47 @@ from sankee import utils
 LABEL_PROPERTY = "sankee_label"
 
 
+def sankify(
+    image_list,
+    region,
+    label_list=None,
+    dataset=None,
+    band=None,
+    labels=None,
+    palette=None,
+    exclude=None,
+    max_classes=None,
+    n=100,
+    title=None,
+    scale=None,
+    seed=0,
+    dropna=True,
+):
+    """
+    Perform sampling, data cleaning and reformatting, and generation of a Sankey plot of land cover change over time
+    within a region.
+    """
+    dataset = utils.build_dataset(dataset, band, labels, palette)
+    label_list = utils.build_label_list(image_list, label_list)
+    utils.check_dataset_is_complete(dataset, image_list, label_list)
+
+    labeled_images = _label_images(image_list, label_list)
+    sample_data = _collect_sample_data(labeled_images, region, dataset, label_list, n, scale, seed)
+
+    utils.check_for_missing_values(sample_data, dataset)
+    cleaned_data = _clean_data(sample_data, exclude, max_classes, dropna=dropna)
+
+    node_labels, link_labels, node_palette, link_palette, label, source, target, value = _reformat(
+        cleaned_data, dataset
+    )
+    return _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)
+
+
 def _label_images(image_list, label_list):
     """
-    Take a list of images and assign provided or auto-generated labels to each. Return the labeled images and the
+    Take a list of images and assign provided labels to each. Return the labeled images and the
     list of labels.
     """
-    if not label_list:
-        label_list = [i for i in range(len(image_list))]
-
     # Assign a label to one image in a list of images
     def apply_label(img, img_list):
         img_list = ee.List(img_list)
@@ -29,42 +62,16 @@ def _label_images(image_list, label_list):
 
         return img_list
 
-    labeled_images = ee.ImageCollection(
-        ee.List(ee.List(image_list).iterate(apply_label, image_list)))
+    labeled_images = ee.ImageCollection(ee.List(ee.List(image_list).iterate(apply_label, image_list)))
 
-    return labeled_images, label_list
-
-
-def _extract_values(image_list, samples, band, scale):
-    """
-    Take a list of images and a collection of sample points and extract image values to each sample point. The image
-    values will be stored in a property based on the image label.
-    """
-    def extract_values(point):
-        # Set the location to extract values at
-        geom = point.geometry()
-
-        def extract(img, feature):
-            # Extract the cover value at the point
-            cover = img.reduceRegion(ee.Reducer.first(), geom, scale).get(band)
-            # Get the user-defined label that was stored in the image
-            label = img.get(LABEL_PROPERTY)
-
-            # Set a property where the name is the label and the value is the extracted cover
-            return ee.Feature(feature).set(label, cover)
-
-        return ee.Feature(image_list.iterate(extract, point))
-
-    sample_data = samples.map(extract_values)
-
-    return sample_data
+    return labeled_images
 
 
-def _sample(image_list, region, dataset, label_list=None, n=100, scale=None, seed=0):
+def _collect_sample_data(image_list, region, dataset, label_list, n=100, scale=None, seed=0):
     """
     Randomly sample values of a list of images to quantify change over time.
 
-    :param list image_list: An list of classified ee.Image objects representing change over time.
+    :param list image_list: An list of labeled, classified ee.Image objects representing change over time.
     :param ee.Geometry region: The region to sample.
     :param geevis.datasets.Dataset dataset: A dataset to which the start and end images belong, which contains a band
     value. If a dataset is not provided, a band name must be explicity provided.
@@ -80,28 +87,69 @@ def _sample(image_list, region, dataset, label_list=None, n=100, scale=None, see
     :return pd.DataFrame: A dataframe in which each row represents as single sample point and columns represent the
     class of that point in each image of the image list.
     """
-    # Apply labels to images
-    labeled_images, label_list = _label_images(image_list, label_list)
-
-    # Create sample points
     samples = ee.FeatureCollection.randomPoints(region, n, seed)
 
-    # Extract image values at each sample point
-    sample_data = _extract_values(labeled_images, samples, dataset.band, scale)
+    sample_data = _extract_values_from_images_at_points(image_list, samples, dataset.band, scale)
 
     try:
-        data = pd.DataFrame.from_dict(
-            [feat["properties"] for feat in ee.Feature(sample_data).getInfo()["features"]])
+        data = utils.feature_collection_to_dataframe(sample_data)
     except ee.EEException as e:
         # ee may raise an error if the band name isn't valid. This is a bit of a hack to catch that since ee doesn't
         # raise more specific errors.
         if dataset.band in e.args[0]:
             raise ValueError(
-                f'"{dataset.band}" is not a valid band name. Check that the dataset band name exists for all images.')
+                f'"{dataset.band}" is not a valid band name. Check that the dataset band name exists for all images.'
+            )
         else:
             raise e
 
     return data[label_list]
+
+
+def _extract_values_from_images_at_points(image_list, sample_points, band, scale):
+    """
+    Take a list of images and a collection of sample points and extract image values to each sample point. The image
+    values will be stored in a property based on the image label.
+    """
+
+    def extract_values_from_images_at_one_point(point):
+        point_location = point.geometry()
+
+        def extract_value_from_image_at_one_point(img, feature):
+            cover = ee.Image(img).reduceRegion(ee.Reducer.first(), point_location, scale).get(band)
+            # Get the user-defined label that was stored in the image
+            label = ee.Image(img).get(LABEL_PROPERTY)
+
+            # Set a property where the name is the label and the value is the extracted cover
+            return ee.Feature(feature).set(label, cover)
+
+        return ee.Feature(ee.List(image_list).iterate(extract_value_from_image_at_one_point, point))
+
+    sample_data = sample_points.map(extract_values_from_images_at_one_point)
+
+    return sample_data
+
+
+def _clean_data(data, exclude=None, max_classes=None, dropna=True):
+    """
+    Perform some cleaning on data before plotting by excluding unwanted classes and limiting the number of classes.
+
+    :param pd.DataFrame data: A dataframe in which each row represents as single sample point and columns represent the
+    class of that point in each image of an image list.
+    :param list exclude: A list of class values to remove from the dataframe.
+    :param int max_classes: The maximum number of unique classes to include in the dataframe. If more classes are present,
+    the smallest classes will be omitted from the plot. If max_classes is None, no classes will be dropped.
+    :param bool dropna: If true, samples with no class data in any column will be dropped.
+    :return pd.DataFrame: The input dataframe with cleaning applied.
+    """
+    if dropna:
+        data = data.dropna()
+    if exclude:
+        data = data[~data.isin(exclude).any(axis=1)]
+    if max_classes:
+        data = utils.drop_classes(data, max_classes)
+
+    return data
 
 
 def _reformat(data, dataset):
@@ -128,31 +176,25 @@ def _reformat(data, dataset):
         column_list = group_data.columns.tolist()
 
         # Transform the data to get counts of each combination of condition
-        sankey_data = group_data.groupby(
-            column_list).size().reset_index(name="value")
+        sankey_data = group_data.groupby(column_list).size().reset_index(name="value")
 
         # Calculate normalized change from start to end condition
-        sankey_data["change"] = utils.normalized_change(
-            sankey_data, column_list[0], "value")
+        sankey_data["change"] = utils.normalized_change(sankey_data, column_list[0], "value")
 
         # Get lists of unique source and target classes
-        unique_source = pd.unique(
-            data[column_list[0]].values.flatten()).tolist()
-        unique_target = pd.unique(
-            data[column_list[1]].values.flatten()).tolist()
+        unique_source = pd.unique(data[column_list[0]].values.flatten()).tolist()
+        unique_target = pd.unique(data[column_list[1]].values.flatten()).tolist()
 
         # Generate a unique index for each source and target
-        sankey_data["source"] = sankey_data[column_list[0]].apply(
-            lambda x: unique_source.index(x) + start_index)
+        sankey_data["source"] = sankey_data[column_list[0]].apply(lambda x: unique_source.index(x) + start_index)
         # Offset the target IDs by the last source class to prevent overlap with source IDs
         sankey_data["target"] = sankey_data[column_list[1]].apply(
-            lambda x: unique_target.index(x) + sankey_data.source.max() + 1)
+            lambda x: unique_target.index(x) + sankey_data.source.max() + 1
+        )
 
         # Assign labels to each source and target
-        sankey_data["source_label"] = sankey_data[column_list[0]].apply(
-            lambda i: dataset.labels[i])
-        sankey_data["target_label"] = sankey_data[column_list[1]].apply(
-            lambda i: dataset.labels[i])
+        sankey_data["source_label"] = sankey_data[column_list[0]].apply(lambda i: dataset.labels[i])
+        sankey_data["target_label"] = sankey_data[column_list[1]].apply(lambda i: dataset.labels[i])
 
         return sankey_data[["source", "target", "value", "source_label", "target_label", "change"]]
 
@@ -170,7 +212,7 @@ def _reformat(data, dataset):
     current_index = 0
 
     for i in range(data.columns.size - 1):
-        column_group = (range(i, i+2))
+        column_group = range(i, i + 2)
         # Select a set of start and end condition columns
         group_data = data.iloc[:, column_group]
 
@@ -183,8 +225,7 @@ def _reformat(data, dataset):
         end_label = group_data.columns[1]
 
         # Store the column label for the source data
-        node_labels += [start_label for i in range(
-            len(pd.unique(sankified.source)))]
+        node_labels += [start_label for i in range(len(pd.unique(sankified.source)))]
 
         # Generate a list of strings describing the change in each row
         for i, row in sankified.iterrows():
@@ -210,78 +251,37 @@ def _reformat(data, dataset):
     return (node_labels, link_labels, node_palette, link_palette, label, source, target, value)
 
 
-def _clean(data, exclude=None, max_classes=None, dropna=True):
-    """
-    Perform some cleaning on data before plotting by excluding unwanted classes and limiting the number of classes.
-
-    :param pd.DataFrame data: A dataframe in which each row represents as single sample point and columns represent the
-    class of that point in each image of an image list.
-    :param list exclude: A list of class values to remove from the dataframe.
-    :param int max_classes: The maximum number of unique classes to include in the dataframe. If more classes are present,
-    the smallest classes will be omitted from the plot. If max_classes is None, no classes will be dropped.
-    :param bool dropna: If true, samples with no class data in any column will be dropped.
-    :return pd.DataFrame: The input dataframe with cleaning applied.
-    """
-    if dropna:
-        data = data.dropna()
-    if exclude:
-        data = data[~data.isin(exclude).any(axis=1)]
-    if max_classes:
-        data = utils.drop_classes(data, max_classes)
-
-    return data
-
-
 def _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=None):
     """
     Generate a Sankey plot of land cover change over an arbitrary number of time steps.
     """
-    fig = go.Figure(data=[go.Sankey(
-        node=dict(
-            pad=30,
-            thickness=20,
-            line=dict(color="#000000", width=1),
-            customdata=node_labels,
-            hovertemplate='%{customdata}<extra></extra>',
-            label=label,
-            color=node_palette
-        ),
-        link=dict(
-            source=source,
-            target=target,
-            line=dict(color="#909090", width=1),
-            value=value,
-            color=link_palette,
-            customdata=link_labels,
-            hovertemplate='%{customdata} <extra></extra>',
-        ))])
+    fig = go.Figure(
+        data=[
+            go.Sankey(
+                node=dict(
+                    pad=30,
+                    thickness=20,
+                    line=dict(color="#000000", width=1),
+                    customdata=node_labels,
+                    hovertemplate="%{customdata}<extra></extra>",
+                    label=label,
+                    color=node_palette,
+                ),
+                link=dict(
+                    source=source,
+                    target=target,
+                    line=dict(color="#909090", width=1),
+                    value=value,
+                    color=link_palette,
+                    customdata=link_labels,
+                    hovertemplate="%{customdata} <extra></extra>",
+                ),
+            )
+        ]
+    )
 
     fig.update_layout(
-        title_text=f"<b>{title}</b>" if title else None,
-        font_size=16,
-        title_x=0.5,
-        paper_bgcolor='rgba(0, 0, 0, 0)'
+        title_text=f"<b>{title}</b>" if title else None, font_size=16, title_x=0.5, paper_bgcolor="rgba(0, 0, 0, 0)"
     )
 
     return fig
-
-
-def sankify(image_list, region, label_list=None, dataset=None, band=None, labels=None, palette=None,
-            exclude=None, max_classes=None, n=100, title=None, scale=None, seed=0, dropna=True):
-    """
-    Perform sampling, data cleaning and reformatting, and generation of a Sankey plot of land cover change over time
-    within a region.
-    """
-    dataset = utils.build_dataset(dataset, band, labels, palette)
-    label_list = utils.build_label_list(image_list, label_list)
-
-    utils.test_params(dataset, image_list, label_list)
-
-    data = _sample(image_list, region, dataset=dataset, label_list=label_list,
-                   n=n, scale=scale, seed=seed)
-
-    utils.check_plot_params(data, dataset)
-    cleaned = _clean(data, exclude, max_classes, dropna=dropna)
-    node_labels, link_labels, node_palette, link_palette, label, source, target, value = _reformat(
-        cleaned, dataset)
-    return _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)
