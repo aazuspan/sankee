@@ -192,7 +192,7 @@ sankee.datasets.CGLS_LC100.get_images(3)
 
 ## Core function
 
-### sankee.sankify(image*list, region, \_label_list, dataset, band, labels, palette, exclude, max_classes, n, title, scale, seed, dropna*)
+### sankee.sankify(image_list, region, _label_list, dataset, band, labels, palette, exclude, max_classes, n, title, scale, seed, dropna_)
 
 Generate `n` random samples points within a `region` and extract classified pixel values from each image in an `image list`. Arrange the sample data into a Sankey plot that can be used to visualize changes in image classifications.
 
@@ -203,7 +203,7 @@ Generate `n` random samples points within a `region` and extract classified pixe
 - region (ee.Geometry)
   - A region to generate samples within.
 - _label_list (list, default: None)_
-  - An list of labels corresponding to the images. The list must be the same length as `image_list`. If none is provided, sequential numeric labels will be automatically assigned starting at 0.
+  - An ordered list of labels corresponding to the images. The list must be the same length as `image_list`. If none is provided, sequential numeric labels will be automatically assigned starting at 0. Labels are displayed on-hover on the Sankey nodes.
 - _dataset (sankee.datasets.Dataset, default: None)_
   - A premade dataset that defines the band, labels, and palette for all images in `image_list`. If a custom dataset is being used, provide `band`, `labels`, and `palette` instead.
 - _band (str, default: None)_
@@ -280,7 +280,7 @@ sankee.datasets.get(0)
 >> <sankee.datasets.Dataset> NLCD: USGS National Land Cover Database
 ```
 
-### sankee.datasets.Dataset.get*images(\_max_images*)
+### sankee.datasets.Dataset.get_images(_max_images_)
 
 Get a list of image names in the collection of a specific dataset.  
 **Arguments**
@@ -306,7 +306,7 @@ sankee.datasets.NLCD2016.get_images(3)
 
 ### sankee.datasets.Dataset.collection
 
-- Return the image collection associated with the dataset.
+- Return the image collection associated with the dataset as an Earth Engine object.
 
 ### sankee.datasets.Dataset.df
 
