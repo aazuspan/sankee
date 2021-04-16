@@ -39,7 +39,7 @@ def sankify(
     utils.check_for_missing_values(sample_data, dataset)
     cleaned_data = _clean_data(sample_data, exclude, max_classes, dropna=dropna)
 
-    node_labels, link_labels, node_palette, link_palette, label, source, target, value = _reformat(
+    node_labels, link_labels, node_palette, link_palette, label, source, target, value = _format_for_sankey(
         cleaned_data, dataset
     )
     return _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)
@@ -152,7 +152,7 @@ def _clean_data(data, exclude=None, max_classes=None, dropna=True):
     return data
 
 
-def _reformat(data, dataset):
+def _format_for_sankey(data, dataset):
     """
     Take a dataframe of data representing classified sample points and return all parameters needed to generate a
     Sankey plot. This is done by looping through columns in groups of two representing start and end conditions and

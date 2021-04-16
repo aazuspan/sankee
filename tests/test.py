@@ -206,13 +206,20 @@ class TestSankee(unittest.TestCase):
 
         self.assertEqual(start_band, end_band)
 
-    def test_reformat(self):
+    def test_format_for_sankey(self):
         """
         Test that mock table data is correctly reformatted for Sankey plotting.
         """
-        node_labels, link_labels, node_palette, link_palette, label, source, target, value = sankee.core._reformat(
-            TEST_DATA, TEST_DATASET
-        )
+        (
+            node_labels,
+            link_labels,
+            node_palette,
+            link_palette,
+            label,
+            source,
+            target,
+            value,
+        ) = sankee.core._format_for_sankey(TEST_DATA, TEST_DATASET)
 
         self.assertEqual(node_labels, ["start", "start", "start", "end", "end", "end", "end"])
         self.assertEqual(
