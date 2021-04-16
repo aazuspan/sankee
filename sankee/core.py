@@ -48,7 +48,7 @@ def sankify(
 def _label_images(image_list, label_list):
     """
     Take a list of images and assign provided labels to each. Return the labeled images and the
-    list of labels.
+    list of labels as an ee.ImageCollection and list respectively.
     """
     # Assign a label to one image in a list of images
     def apply_label(img, img_list):
@@ -71,7 +71,7 @@ def _collect_sample_data(image_list, region, dataset, label_list, n=100, scale=N
     """
     Randomly sample values of a list of images to quantify change over time.
 
-    :param list image_list: An list of labeled, classified ee.Image objects representing change over time.
+    :param ee.ImageCollection image_list: A collection of labeled, classified ee.Images representing change over time.
     :param ee.Geometry region: The region to sample.
     :param geevis.datasets.Dataset dataset: A dataset to which the start and end images belong, which contains a band
     value. If a dataset is not provided, a band name must be explicity provided.
@@ -108,7 +108,7 @@ def _collect_sample_data(image_list, region, dataset, label_list, n=100, scale=N
 
 def _extract_values_from_images_at_points(image_list, sample_points, band, scale):
     """
-    Take a list of images and a collection of sample points and extract image values to each sample point. The image
+    Take a collection of images and a collection of sample points and extract image values to each sample point. The image
     values will be stored in a property based on the image label.
     """
 
@@ -123,7 +123,7 @@ def _extract_values_from_images_at_points(image_list, sample_points, band, scale
             # Set a property where the name is the label and the value is the extracted cover
             return ee.Feature(feature).set(label, cover)
 
-        return ee.Feature(ee.List(image_list).iterate(extract_value_from_image_at_one_point, point))
+        return ee.Feature(image_list.iterate(extract_value_from_image_at_one_point, point))
 
     sample_data = sample_points.map(extract_values_from_images_at_one_point)
 

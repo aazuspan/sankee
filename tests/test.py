@@ -183,7 +183,7 @@ class TestSankee(unittest.TestCase):
         dataset = sankee.utils.build_dataset(dataset=TEST_DATASET, band="bad_band")
 
         with self.assertRaises(ValueError):
-            sankee.core._collect_sample_data(TEST_IMG_LIST, TEST_REGION, dataset, TEST_LABEL_LIST)
+            sankee.core._collect_sample_data(ee.ImageCollection(TEST_IMG_LIST), TEST_REGION, dataset, TEST_LABEL_LIST)
 
     def test_missing_label_list(self):
         """
