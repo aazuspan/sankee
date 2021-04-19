@@ -67,6 +67,14 @@ TEST_DATA = pd.DataFrame(
     }
 )
 
+THREE_PERIOD_TEST_DATA = pd.DataFrame(
+    {
+        "start": [1, 1, 1, 2, 2, 4],
+        "mid": [3, 3, 1, 1, 2, 4],
+        "end": [1, 1, 1, 2, 3, 4],
+    }
+)
+
 
 class TestSankee(unittest.TestCase):
     def test_dropna(self):
@@ -206,9 +214,9 @@ class TestSankee(unittest.TestCase):
 
         self.assertEqual(start_band, end_band)
 
-    def test_format_for_sankey(self):
+    def test_format_for_sankey_with_two_periods(self):
         """
-        Test that mock table data is correctly reformatted for Sankey plotting.
+        Test that mock table data for a two-period time series is correctly reformatted for Sankey plotting.
         """
         (
             node_labels,
@@ -248,6 +256,90 @@ class TestSankee(unittest.TestCase):
         self.assertEqual(source, [0, 1, 1, 2])
         self.assertEqual(target, [3, 4, 5, 6])
         self.assertEqual(value, [3, 1, 1, 1])
+
+    def test_format_for_sankey_with_three_periods(self):
+        """
+        Test that mock table data for a three-period time series is correctly reformatted for Sankey plotting.
+        """
+        (
+            node_labels,
+            link_labels,
+            node_palette,
+            link_palette,
+            label,
+            source,
+            target,
+            value,
+        ) = sankee.core._format_for_sankey(THREE_PERIOD_TEST_DATA, TEST_DATASET)
+
+        self.assertEqual(
+            node_labels, ["start", "start", "start", "mid", "mid", "mid", "mid", "end", "end", "end", "end"]
+        )
+        self.assertEqual(
+            link_labels,
+            [
+                "33% of Evergreen conifer forest remained Evergreen conifer forest",
+                "67% of Evergreen conifer forest became Deciduous conifer forest",
+                "50% of Evergreen broadleaf forest became Evergreen conifer forest",
+                "50% of Evergreen broadleaf forest remained Evergreen broadleaf forest",
+                "100% of Deciduous broadleaf forest remained Deciduous broadleaf forest",
+                "50% of Evergreen conifer forest remained Evergreen conifer forest",
+                "50% of Evergreen conifer forest became Evergreen broadleaf forest",
+                "100% of Evergreen broadleaf forest became Deciduous conifer forest",
+                "100% of Deciduous conifer forest became Evergreen conifer forest",
+                "100% of Deciduous broadleaf forest remained Deciduous broadleaf forest",
+            ],
+        )
+        self.assertEqual(
+            node_palette,
+            [
+                "#086a10",
+                "#dcd159",
+                "#78d203",
+                "#54a708",
+                "#086a10",
+                "#dcd159",
+                "#78d203",
+                "#086a10",
+                "#dcd159",
+                "#54a708",
+                "#78d203",
+            ],
+        )
+        self.assertEqual(
+            link_palette,
+            [
+                "#086a10",
+                "#086a10",
+                "#dcd159",
+                "#dcd159",
+                "#78d203",
+                "#086a10",
+                "#086a10",
+                "#dcd159",
+                "#54a708",
+                "#78d203",
+            ],
+        )
+        self.assertEqual(
+            label,
+            [
+                "Evergreen conifer forest",
+                "Evergreen broadleaf forest",
+                "Deciduous broadleaf forest",
+                "Deciduous conifer forest",
+                "Evergreen conifer forest",
+                "Evergreen broadleaf forest",
+                "Deciduous broadleaf forest",
+                "Evergreen conifer forest",
+                "Evergreen broadleaf forest",
+                "Deciduous conifer forest",
+                "Deciduous broadleaf forest",
+            ],
+        )
+        self.assertEqual(source, [0, 0, 1, 1, 2, 4, 4, 5, 3, 6])
+        self.assertEqual(target, [4, 3, 4, 5, 6, 7, 8, 9, 7, 10])
+        self.assertEqual(value, [1, 2, 1, 1, 1, 1, 1, 1, 2, 1])
 
 
 if __name__ == "__main__":
