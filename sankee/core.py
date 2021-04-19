@@ -39,10 +39,7 @@ def sankify(
     utils.check_for_missing_values(sample_data, dataset)
     cleaned_data = _clean_data(sample_data, exclude, max_classes, dropna=dropna)
 
-    node_labels, link_labels, node_palette, link_palette, label, source, target, value = _format_for_sankey(
-        cleaned_data, dataset
-    )
-    return _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)
+    return _generate_sankey_plot(cleaned_data, dataset, title)
 
 
 def _label_images(image_list, label_list):
@@ -152,6 +149,13 @@ def _clean_data(data, exclude=None, max_classes=None, dropna=True):
     return data
 
 
+def _generate_sankey_plot(data, dataset, title):
+    node_labels, link_labels, node_palette, link_palette, label, source, target, value = _format_for_sankey(
+        data, dataset
+    )
+    return _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)
+
+
 def _format_for_sankey(data, dataset):
     """
     Take a dataframe of data representing classified sample points and return all parameters needed to generate a
@@ -170,85 +174,125 @@ def _format_for_sankey(data, dataset):
     :return tuple: A tuple of values used in Sankey plotting in the following order: node labels, link labels, node
     palette, link palette, labels, source, target, and values.
     """
-    # Take a dataframe with two columns representing start conditions and end conditions and return it in a new dataframe
-    # for use in sankey plotting
-    def reformat_group(group_data, start_index=0):
-        column_list = group_data.columns.tolist()
+    formatted_data = _group_and_format_data(data, dataset)
 
-        # Transform the data to get counts of each combination of condition
-        sankey_data = group_data.groupby(column_list).size().reset_index(name="value")
+    node_labels = _build_node_labels(formatted_data)
+    link_labels = _build_link_labels(formatted_data)
+    label = _build_labels(formatted_data)
 
-        # Calculate normalized change from start to end condition
-        sankey_data["change"] = utils.normalized_change(sankey_data, column_list[0], "value")
+    source = formatted_data.source.tolist()
+    target = formatted_data.target.tolist()
+    value = formatted_data.value.tolist()
 
-        # Get lists of unique source and target classes
-        unique_source = pd.unique(data[column_list[0]].values.flatten()).tolist()
-        unique_target = pd.unique(data[column_list[1]].values.flatten()).tolist()
-
-        # Generate a unique index for each source and target
-        sankey_data["source"] = sankey_data[column_list[0]].apply(lambda x: unique_source.index(x) + start_index)
-        # Offset the target IDs by the last source class to prevent overlap with source IDs
-        sankey_data["target"] = sankey_data[column_list[1]].apply(
-            lambda x: unique_target.index(x) + sankey_data.source.max() + 1
-        )
-
-        # Assign labels to each source and target
-        sankey_data["source_label"] = sankey_data[column_list[0]].apply(lambda i: dataset.labels[i])
-        sankey_data["target_label"] = sankey_data[column_list[1]].apply(lambda i: dataset.labels[i])
-
-        return sankey_data[["source", "target", "value", "source_label", "target_label", "change"]]
-
-    # Calculate the max index that will be needed based on the number of unique classes in all groups
-    max_id = sum([len(pd.unique(col)) for _, col in data.iteritems()])
-
-    # Pre-allocate a list of labels that will be iteratively assigned labels up to the max id
-    label = [None for i in range(max_id)]
-
-    node_labels = []
-    link_labels = []
-    source = []
-    target = []
-    value = []
-    current_index = 0
-
-    for i in range(data.columns.size - 1):
-        column_group = range(i, i + 2)
-        # Select a set of start and end condition columns
-        group_data = data.iloc[:, column_group]
-
-        sankified = reformat_group(group_data, start_index=current_index)
-        # The start index of the next column group will be the end index of this column group. This sets the index
-        # offset to achieve that.
-        current_index = sankified.target.min()
-
-        start_label = group_data.columns[0]
-        end_label = group_data.columns[1]
-
-        # Store the column label for the source data
-        node_labels += [start_label for i in range(len(pd.unique(sankified.source)))]
-
-        # Generate a list of strings describing the change in each row
-        for i, row in sankified.iterrows():
-            if row.source_label == row.target_label:
-                link_label = f"{round(row.change * 100)}% of {row.source_label} remained {row.target_label}"
-            else:
-                link_label = f"{round(row.change * 100)}% of {row.source_label} became {row.target_label}"
-            link_labels.append(link_label)
-
-            # Assign class labels to match their respective indexes
-            label[row.source] = row.source_label
-            label[row.target] = row.target_label
-
-        source += sankified.source.tolist()
-        target += sankified.target.tolist()
-        value += sankified.value.tolist()
-
-    # Store the column label for the final target data
-    node_labels += [end_label for i in range(len(pd.unique(sankified.target)))]
     node_palette = [dataset.get_color(l) for l in label]
     link_palette = [dataset.get_color(i) for i in [label[j] for j in source]]
 
     return (node_labels, link_labels, node_palette, link_palette, label, source, target, value)
+
+
+def _group_and_format_data(data, dataset):
+    """
+    Take raw data, group it into groups of two, and generate a formatted dataframe.
+    """
+    current_index = 0
+    formatted_data = pd.DataFrame()
+
+    for group in _group_columns(data):
+        sankified = _reformat_group(data, group, dataset, start_index=current_index)
+        # The start index of the next column group will be the end index of this column group. This sets the index
+        # offset to achieve that.
+        current_index = sankified.target.min()
+
+        formatted_data = formatted_data.append(sankified)
+
+    return formatted_data
+
+
+def _group_columns(data):
+    """
+    Yield all groups of two adjacent columns from a dataframe.
+    """
+    for i in range(data.columns.size - 1):
+        group_indexes = [i, i + 1]
+        yield data.iloc[:, group_indexes]
+
+
+def _reformat_group(raw_data, group_data, dataset, start_index=0):
+    column_list = group_data.columns.tolist()
+
+    # Transform the data to get counts of each combination of condition
+    sankey_data = group_data.groupby(group_data.columns.tolist()).size().reset_index(name="value")
+
+    # Calculate normalized change from start to end condition
+    sankey_data["change"] = utils.normalized_change(sankey_data, column_list[0], "value")
+
+    sankey_data = _assign_unique_indexes(raw_data, sankey_data, start_index)
+
+    # Assign labels to each source and target
+    sankey_data["source_label"] = sankey_data.iloc[:, 0].apply(lambda i: dataset.labels[i])
+    sankey_data["target_label"] = sankey_data.iloc[:, 1].apply(lambda i: dataset.labels[i])
+
+    # Store the labels of the time series periods
+    sankey_data["source_period"] = column_list[0]
+    sankey_data["target_period"] = column_list[1]
+
+    return sankey_data[
+        ["source", "target", "value", "change", "source_label", "target_label", "source_period", "target_period"]
+    ]
+
+
+def _assign_unique_indexes(raw_data, sankey_data, start_index):
+    column_list = sankey_data.columns.tolist()
+
+    # Get lists of unique source and target classes
+    unique_source = pd.unique(raw_data[column_list[0]].values.flatten()).tolist()
+    unique_target = pd.unique(raw_data[column_list[1]].values.flatten()).tolist()
+
+    # Generate a unique index for each source and target
+    sankey_data["source"] = sankey_data.iloc[:, 0].apply(lambda x: unique_source.index(x) + start_index)
+    # Offset the target IDs by the last source class to prevent overlap with source IDs
+    sankey_data["target"] = sankey_data.iloc[:, 1].apply(
+        lambda x: unique_target.index(x) + sankey_data.source.max() + 1
+    )
+
+    return sankey_data
+
+
+def _build_node_labels(data):
+    """
+    Build a list of period labels for nodes, corresponding to the link indexes.
+    """
+    labels = pd.concat([data.source, data.target])
+    periods = pd.concat([data.source_period, data.target_period])
+    combined = pd.DataFrame({"label": labels, "period": periods})
+    return combined.groupby("label").period.first().tolist()
+
+
+def _build_link_labels(data):
+    return [_build_link_label(row.source_label, row.target_label, row.change) for _, row in data.iterrows()]
+
+
+def _build_link_label(start_class, end_class, change):
+    """
+    Build a string describing the change from one state to another in a row of data.
+    """
+    verb = "remained" if start_class == end_class else "became"
+    link_label = f"{round(change * 100)}% of {start_class} {verb} {end_class}"
+
+    return link_label
+
+
+def _build_labels(data):
+    max_id = data.target.max()
+    # Build empty placeholder labels for each class
+    label = [None for i in range(max_id + 1)]
+
+    for _, row in data.iterrows():
+        # Iteratively replace the placeholder labels with correct labels for each index
+        label[row.source] = row.source_label
+        label[row.target] = row.target_label
+
+    return label
 
 
 def _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=None):
