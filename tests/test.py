@@ -76,6 +76,37 @@ THREE_PERIOD_TEST_DATA = pd.DataFrame(
 )
 
 
+class TestUtils(unittest.TestCase):
+    def test_drop_small_classes(self):
+        """
+        Test that the classes with the fewest observations are dropped by drop_small_classes
+        """
+        dropped = sankee.utils.drop_small_classes(TEST_DATA, keep_classes=1)
+        target = pd.DataFrame({"start": [1, 1, 1], "end": [1, 1, 1]})
+        assert_frame_equal(dropped, target)
+
+    def test_get_missing_keys(self):
+        """
+        Test that a missing key is found from a dictionary.
+        """
+        test_dict = {"a": 0, "b": 1, "c": 2}
+        test_keys = ["a", "b", "c", "d"]
+        missing_keys = sankee.utils.get_missing_keys(test_keys, test_dict)
+        self.assertListEqual(missing_keys, ["d"])
+
+    def test_normalize_change_sum_is_correct(self):
+        """
+        Test that the sum of normalized changes is equal to the number of input classes.
+        """
+        test_data = pd.DataFrame(
+            {"source": [0, 1, 1, 2, 3, 4, 4], "target": [5, 6, 7, 7, 8, 9, 10], "value": [1, 2, 1, 3, 1, 5, 9]}
+        )
+
+        num_classes = test_data.source.unique().size
+        normalized_values = sankee.utils.normalized_change(test_data, "source", "value").values
+        self.assertAlmostEqual(num_classes, normalized_values.sum())
+
+
 class TestSankee(unittest.TestCase):
     def test_dropna(self):
         """
