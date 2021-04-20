@@ -176,7 +176,7 @@ class TestSankee(unittest.TestCase):
         test_band = "test"
         test_labels = {0: "first label", 1: "second label"}
         test_palette = {0: "first color", 2: "second color"}
-        dataset = sankee.utils.build_dataset(
+        dataset = sankee.core._build_dataset(
             dataset=TEST_DATASET, band=test_band, labels=test_labels, palette=test_palette
         )
 
@@ -188,7 +188,7 @@ class TestSankee(unittest.TestCase):
         """
         If a band name is passed to _collect_sample_data and it's not in the image, a ValueError should be raised.
         """
-        dataset = sankee.utils.build_dataset(dataset=TEST_DATASET, band="bad_band")
+        dataset = sankee.core._build_dataset(dataset=TEST_DATASET, band="bad_band")
 
         with self.assertRaises(ValueError):
             sankee.core._collect_sample_data(ee.ImageCollection(TEST_IMG_LIST), TEST_REGION, dataset, TEST_LABEL_LIST)
@@ -197,18 +197,18 @@ class TestSankee(unittest.TestCase):
         """
         If no label list is passed to build_label_list, a sequential numeric label list should be created
         """
-        label_list = sankee.utils.build_label_list(TEST_IMG_LIST, label_list=None)
+        label_list = sankee.core._build_label_list(TEST_IMG_LIST, label_list=None)
         target = ["0", "1"]
         self.assertEqual(label_list, target)
 
     def test_dataset_unchanged_by_build(self):
         """
-        The utils.build_dataset function should not permanently affect a dataset's attributes when it uses it to build a
+        The core._build_dataset function should not permanently affect a dataset's attributes when it uses it to build a
         new dataset.
         """
         start_band = TEST_DATASET.band
 
-        sankee.utils.build_dataset(dataset=TEST_DATASET, band="new_band")
+        sankee.core._build_dataset(dataset=TEST_DATASET, band="new_band")
 
         end_band = TEST_DATASET.band
 

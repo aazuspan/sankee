@@ -29,17 +29,57 @@ def sankify(
     Perform sampling, data cleaning and reformatting, and generation of a Sankey plot of land cover change over time
     within a region.
     """
-    dataset = utils.build_dataset(dataset, band, labels, palette)
-    label_list = utils.build_label_list(image_list, label_list)
-    utils.check_dataset_is_complete(dataset, image_list, label_list)
+    dataset = _build_dataset(dataset, band, labels, palette)
+    label_list = _build_label_list(image_list, label_list)
+
+    _check_label_list_matches_image_list(label_list, image_list)
+    dataset.check_is_complete()
 
     labeled_images = _label_images(image_list, label_list)
     sample_data = _collect_sample_data(labeled_images, region, dataset, label_list, n, scale, seed)
 
-    utils.check_for_missing_values(sample_data, dataset)
+    dataset.check_data_is_compatible(sample_data)
+
     cleaned_data = _clean_data(sample_data, exclude, max_classes, dropna=dropna)
 
     return _generate_sankey_plot(cleaned_data, dataset, title)
+
+
+def _build_dataset(dataset=None, band=None, labels=None, palette=None):
+    """
+    Take a dataset and/or some combination of band, labels, and palette and return a dataset. If a dataset is
+    provided, a copy will be returned with any provided parameters replaced.
+    """
+    labels = labels if labels else {}
+    palette = palette if palette else {}
+
+    # Replace any dataset parameters with provided parameters
+    if dataset:
+        band = band if band else dataset.band
+        labels = labels if labels else dataset.labels
+        palette = palette if palette else dataset.palette
+
+    built = Dataset(collection_name=None, band=band, labels=labels, palette=palette)
+
+    return built
+
+
+def _build_label_list(image_list, label_list=None):
+    """
+    Take an image list and an optional label list. If a label list is provided, elements will be cast to string. If not,
+    a label list will be generated using sequential numbers to match the image list.
+    """
+    if not label_list:
+        label_list = [i for i in range(len(image_list))]
+    # Cast every element in label list to string since GEE can't handle that
+    label_list = [str(x) for x in label_list]
+
+    return label_list
+
+
+def _check_label_list_matches_image_list(label_list, image_list):
+    if len(label_list) != len(image_list):
+        raise ValueError("Length of label list must match length of image list.")
 
 
 def _label_images(image_list, label_list):
@@ -144,7 +184,7 @@ def _clean_data(data, exclude=None, max_classes=None, dropna=True):
     if exclude:
         data = data[~data.isin(exclude).any(axis=1)]
     if max_classes:
-        data = utils.drop_classes(data, max_classes)
+        data = utils.drop_classes(data, max_classes, "value")
 
     return data
 
