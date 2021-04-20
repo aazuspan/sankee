@@ -26,8 +26,40 @@ def sankify(
     dropna=True,
 ):
     """
-    Perform sampling, data cleaning and reformatting, and generation of a Sankey plot of land cover change over time
-    within a region.
+    Perform sampling, data cleaning and reformatting, and generation of a Sankey plot of land cover change over a time
+    series of images within a region.
+
+    :param image_list list: An ordered list of images representing a time series of classified data. Each image will be
+    sampled to generate the Sankey plot. Any length of list is allowed, but lists with more than 3 or 4 images may
+    produce unusable plots.
+    :param region ee.Geometry: A region to generate samples within.
+    :param label_list list, default None: An ordered list of labels corresponding to the images. The list must be the
+    same length as image_list. If none is provided, sequential numeric labels will be automatically assigned starting at
+    0. Labels are displayed on-hover on the Sankey nodes.
+    :param dataset sankee.datasets.Dataset, default None: A premade dataset that defines the band, labels, and palette
+    for all images in image_list. If a custom dataset is being used, provide band, labels, and palette instead.
+    :param band str, default None: The name of the band in all images of image_list that contains classified data. If
+    none is provided, dataset must be provided instead.
+    :param labels dict, default None: The labels associated with each value of all images in image_list. Every value in
+    the images must be included as a key in the labels dictionary. If none is provided, dataset must be provided instead.
+    :param palette dict, default None: The colors associated with each value of all images in image_list. Every value in
+    the images must be included as a key in the palette dictionary. If none is provided, dataset must be provided
+    instead. Colors must be supported by Plotly.
+    :param exclude list, default None: An optional list of pixel values to exclude from the plot. Excluded values must
+    be raw pixel values rather than class labels. This can be helpful if the region is dominated by one or more
+    unchanging classes and the goal is to visualize changes in smaller classes.
+    :param max_classes int, default None: If a value is provided, small classes will be removed until max_classes
+    remain. Class size is calculated based on total times sampled in the time series.
+    :param n int, default 100: The number of samples points to randomly generate for characterizing all images. More
+    samples will provide more representative data but will take longer to process.
+    :param title str, default None: An optional title that will be displayed above the Sankey plot.
+    :param scale int, default None: The scale in image units to perform sampling at. If none is provided, GEE will
+    attempt to use the image's nominal scale, which may cause errors depending on the image projection.
+    :param seed int, default 0: The seed value used to generate repeatable results during random sampling.
+    :param dropna bool, default True: If the region extends into areas that contain no data in any image, some samples
+    may have null values. If dropna is True, those samples will be dropped. This may lead to fewer samples being
+    returned than were requested by n.
+    :return plotly.graph_objs._figure.Figure An interactive Sankey plot.
     """
     dataset = _build_dataset(dataset, band, labels, palette)
     label_list = _build_label_list(image_list, label_list)
