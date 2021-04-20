@@ -14,6 +14,7 @@ Visualize changes in classified time series data with interactive Sankey plots i
 - [Installation](https://github.com/aazuspan/sankee#Installation)
   - [Using Pip](https://github.com/aazuspan/sankee#Using-Pip)
   - [Using Conda](https://github.com/aazuspan/sankee#Using-Conda)
+  - [For Developers](https://github.com/aazuspan/sankee#For-Developers)
 - [Requirements](https://github.com/aazuspan/sankee#Requirements)
 - [Quick Start](https://github.com/aazuspan/sankee#Quick-Start)
   - [Using a Premade Dataset](https://github.com/aazuspan/sankee#Using-a-Premade-Dataset)
@@ -47,6 +48,25 @@ pip install sankee
 conda create -n sankee
 conda activate sankee
 conda install -c conda-forge sankee
+```
+
+### For Developers
+Currently, pipenv is used to store development dependencies. The following steps install and activate a pipenv development environment
+```sh
+# Create a local repository
+git clone https://github.com/aazuspan/sankee
+cd sankee
+
+# Install all dependencies, including development tools, and activate the environment
+pip install pipenv
+pipenv install -d
+pipenv shell
+
+# Set the directory so that pre-commit testing will be run
+scripts/install-hooks.bash
+
+# Optionally, tests can be run manually
+scripts/run-tests.bash
 ```
 
 ## Requirements
