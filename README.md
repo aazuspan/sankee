@@ -51,7 +51,7 @@ conda install -c conda-forge sankee
 ```
 
 ### For Developers
-Currently, pipenv is used to store development dependencies. The following steps install and activate a pipenv development environment
+Currently, pipenv is used to track development dependencies. The following steps install and activate a pipenv development environment.
 ```sh
 # Create a local repository
 git clone https://github.com/aazuspan/sankee
