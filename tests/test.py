@@ -372,6 +372,51 @@ class TestSankee(unittest.TestCase):
         self.assertEqual(target, [4, 3, 4, 5, 6, 7, 8, 9, 7, 10])
         self.assertEqual(value, [1, 2, 1, 1, 1, 1, 1, 1, 2, 1])
 
+    def test_build_labels(self):
+        """
+        The _build_labels function should not allow duplicate labels within periods
+        but should allow duplicate labels between periods.
+        """
+        data = pd.DataFrame(
+            {
+                "source": [0, 0, 1, 2],
+                "source_label": ["zero", "zero", "one", "two"],
+                "target": [3, 3, 4, 5],
+                "target_label": ["zero", "zero", "four", "five"],
+            }
+        )
+
+        labels = sankee.core._build_labels(data)
+
+        self.assertListEqual(labels, ["zero", "one", "two", "zero", "four", "five"])
+
+    def test_build_link_label(self):
+        """
+        Test that descriptive link labels are built correctly whether classes
+        changed or remained the same.
+        """
+        link_label_changed = sankee.core._build_link_label("start", "end", 0.8)
+        self.assertEqual(link_label_changed, "80% of start became end")
+
+        link_label_remained = sankee.core._build_link_label("start", "start", 0.8)
+        self.assertEqual(link_label_remained, "80% of start remained start")
+
+    def test_build_node_labels(self):
+        """
+        The _build_node_labels function should return one period label for each
+        unique value in the source and target fields.
+        """
+        data = pd.DataFrame(
+            {
+                "source": [0, 0, 0, 0],
+                "source_period": ["start", "start", "start", "start"],
+                "target": [1, 2, 3, 4],
+                "target_period": ["end", "end", "end", "end"],
+            }
+        )
+        node_labels = sankee.core._build_node_labels(data)
+        self.assertListEqual(node_labels, ["start", "end", "end", "end", "end"])
+
 
 if __name__ == "__main__":
     unittest.main()
