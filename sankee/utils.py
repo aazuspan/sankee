@@ -25,7 +25,7 @@ def get_missing_keys(key_list, key_dict):
     return [key for key in key_list if key not in key_dict.keys()]
 
 
-def drop_small_classes(data, keep_classes, count_col):
+def drop_small_classes(data, keep_classes):
     """
     Remove small classes until a maximum number of classes is reached.
 
@@ -35,7 +35,7 @@ def drop_small_classes(data, keep_classes, count_col):
     classes will be removed.
     :return pd.DataFrame: A dataframe with rows that belong to the largest classes.
     """
-    class_counts = data.melt().groupby(count_col).size().reset_index(name="n")
+    class_counts = data.melt().groupby("value").size().reset_index(name="n")
     largest_classes = class_counts.sort_values(by="n", ascending=False).value[:keep_classes].tolist()
     dropped_data = data[data.isin(largest_classes).all(axis=1)]
 
