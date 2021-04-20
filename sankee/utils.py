@@ -25,18 +25,18 @@ def get_missing_keys(key_list, key_dict):
     return [key for key in key_list if key not in key_dict.keys()]
 
 
-def drop_classes(data, max_classes, count_col):
+def drop_small_classes(data, keep_classes, count_col):
     """
     Remove small classes until a maximum number of classes is reached.
 
     :param pd.DataFrame data: A dataframe in which each row represents as single sample point and columns represent
     the class of that point at various times.
-    :param int max_classes: The maximum number of unique classes to retain. If more classes are present, the smallest
+    :param int keep_classes: The maximum number of unique classes to retain. If more classes are present, the smallest
     classes will be removed.
     :return pd.DataFrame: A dataframe with rows that belong to the largest classes.
     """
     class_counts = data.melt().groupby(count_col).size().reset_index(name="n")
-    largest_classes = class_counts.sort_values(by="n", ascending=False).value[:max_classes].tolist()
+    largest_classes = class_counts.sort_values(by="n", ascending=False).value[:keep_classes].tolist()
     dropped_data = data[data.isin(largest_classes).all(axis=1)]
 
     return dropped_data

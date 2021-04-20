@@ -184,7 +184,7 @@ def _clean_data(data, exclude=None, max_classes=None, dropna=True):
     if exclude:
         data = data[~data.isin(exclude).any(axis=1)]
     if max_classes:
-        data = utils.drop_classes(data, max_classes, "value")
+        data = utils.drop_small_classes(data, max_classes, "value")
 
     return data
 
