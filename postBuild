@@ -1,4 +1,3 @@
 # Bash commands to run after building in Binder to allow interactive maps
 jupyter contrib nbextension install --user
 jupyter nbextension enable --py widgetsnbextension
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38 --minimize=False
