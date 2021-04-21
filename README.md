@@ -1,8 +1,9 @@
 # sankee
 
-[![conda-forge link](https://img.shields.io/conda/vn/conda-forge/sankee?style=flat-square)](https://anaconda.org/conda-forge/sankee)
-[![conda-forge link](https://img.shields.io/pypi/v/sankee?style=flat-square)](https://pypi.org/project/sankee)
-[![license link](https://img.shields.io/github/license/aazuspan/sankee?style=flat-square)](https://opensource.org/licenses/GPL-3.0)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/aazuspan/sankee/HEAD?filepath=examples%2Fexample_snow_and_ice.ipynb)
+[![conda-forge link](https://img.shields.io/conda/vn/conda-forge/sankee)](https://anaconda.org/conda-forge/sankee)
+[![conda-forge link](https://img.shields.io/pypi/v/sankee)](https://pypi.org/project/sankee)
+[![license link](https://img.shields.io/github/license/aazuspan/sankee)](https://opensource.org/licenses/GPL-3.0)
 
 Visualize changes in classified time series data with interactive Sankey plots in Google Earth Engine
 
@@ -206,7 +207,7 @@ sankee.datasets.CGLS_LC100.get_images(3)
 
 ### Integration with geemap
 
-[geemap](https://github.com/giswqs/geemap) is a great tool for exploring changes in GEE imagery before creating plots with `sankee`. Integration is quick and easy. Just use `geemap` like you normally would, and pass the images and feature geometries to `sankee` for plotting. The example at the top of the page shows `sankee` can be used with `geemap`.
+[geemap](https://github.com/giswqs/geemap) is a great tool for exploring changes in GEE imagery before creating plots with `sankee`. Integration is quick and easy. Just use `geemap` like you normally would, and pass the images and feature geometries to `sankee` for plotting. Click [here](https://mybinder.org/v2/gh/aazuspan/sankee/HEAD?filepath=examples%2Fexample_snow_and_ice.ipynb) for an interactive notebook that demonstrates using `sankee` with `geemap`. 
 
 # API
 
