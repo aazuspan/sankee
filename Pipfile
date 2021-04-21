@@ -14,6 +14,8 @@ plotly = "*"
 [dev-packages]
 bumpversion = "*"
 twine = "*"
+ipywidgets = "*"
+jupyter_contrib_nbextensions = "*"
 
 [requires]
 python_version = "3.8"
