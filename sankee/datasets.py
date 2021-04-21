@@ -1,6 +1,7 @@
 from enum import Enum
 import ee
 import pandas as pd
+from sankee import utils
 
 
 class Dataset:
@@ -16,8 +17,7 @@ class Dataset:
         self.palette = palette
 
     def __repr__(self):
-        return f"<sankee.datasets.Dataset> {self.title}" \
-
+        return f"<sankee.datasets.Dataset> {self.title}"
 
     @property
     def keys(self):
@@ -60,14 +60,50 @@ class Dataset:
                 pass
 
         if len(img_list) == max_images:
-            img_list.append('...')
+            img_list.append("...")
         return img_list
+
+    def check_is_complete(self):
+        """
+        Run tests to ensure parameters are complete. Raise exceptions if not.
+        """
+        if not self.band:
+            raise ValueError("Provide dataset or band.")
+        if not self.labels:
+            raise ValueError("Provide dataset or labels.")
+        if not self.palette:
+            raise ValueError("Provide dataset or palette.")
+        return 0
+
+    def check_data_is_compatible(self, data):
+        """
+        Check for values that are present in data and are not present in labels or palette and raise an error if any are
+        found.
+        """
+        missing_labels = []
+        missing_palette = []
+
+        for _, col in data.iteritems():
+            missing_labels += utils.get_missing_keys(col, self.labels)
+            missing_palette += utils.get_missing_keys(col, self.palette)
+
+        if missing_labels:
+            raise Exception(
+                f"The following values are present in the data and undefined in the labels: {np.unique(missing_labels)}"
+            )
+        if missing_palette:
+            raise Exception(
+                f"The following values are present in the data and undefined in the palette: {np.unique(missing_palette)}"
+            )
+
+        return 0
 
 
 class datasets(Dataset, Enum):
     NLCD2016 = (
         "USGS/NLCD",
-        "landcover", {
+        "landcover",
+        {
             1: "No data",
             11: "Open water",
             12: "Perennial ice/snow",
@@ -88,8 +124,9 @@ class datasets(Dataset, Enum):
             81: "Pasture/hay",
             82: "Cultivated crops",
             90: "Woody wetlands",
-            95: "Emergent herbaceous wetlands"
-        }, {
+            95: "Emergent herbaceous wetlands",
+        },
+        {
             1: "#000000",
             11: "#466b9f",
             12: "#d1def8",
@@ -110,8 +147,9 @@ class datasets(Dataset, Enum):
             81: "#dcd939",
             82: "#ab6c28",
             90: "#b8d9eb",
-            95: "#6c9fb8"
-        })
+            95: "#6c9fb8",
+        },
+    )
 
     MODIS_LC_TYPE1 = (
         "MODIS/006/MCD12Q1",
@@ -133,7 +171,7 @@ class datasets(Dataset, Enum):
             14: "Cropland and natural vegetation",
             15: "Permanent snow and ice",
             16: "Barren",
-            17: "Water"
+            17: "Water",
         },
         {
             1: "#086a10",
@@ -153,7 +191,7 @@ class datasets(Dataset, Enum):
             15: "#69fff8",
             16: "#f9ffa4",
             17: "#1c0dff",
-        }
+        },
     )
 
     MODIS_LC_TYPE2 = (
@@ -194,7 +232,7 @@ class datasets(Dataset, Enum):
             13: "#a5a5a5",
             14: "#ff6d4c",
             15: "#f9ffa4",
-        }
+        },
     )
 
     MODIS_LC_TYPE3 = (
@@ -211,7 +249,7 @@ class datasets(Dataset, Enum):
             7: "Evergreen conifer",
             8: "Deciduous conifer",
             9: "Barren",
-            10: "Urban"
+            10: "Urban",
         },
         {
             0: "#1c0dff",
@@ -224,8 +262,8 @@ class datasets(Dataset, Enum):
             7: "#05450a",
             8: "#54a708",
             9: "#f9ffa4",
-            10: "#a5a5a5"
-        }
+            10: "#a5a5a5",
+        },
     )
 
     CGLS_LC100 = (
@@ -254,7 +292,7 @@ class datasets(Dataset, Enum):
             124: "Open forest, deciduous broad leaf",
             125: "Open forest, mixed",
             126: "Open forest, other",
-            200: "Ocean"
+            200: "Ocean",
         },
         {
             0: "#282828",
@@ -279,8 +317,8 @@ class datasets(Dataset, Enum):
             124: "#A0DC00",
             125: "#929900",
             126: "#648C00",
-            200: "#000080"
-        }
+            200: "#000080",
+        },
     )
 
     @classmethod
@@ -293,7 +331,7 @@ class datasets(Dataset, Enum):
     @classmethod
     def get(cls, i=None):
         """
-        Return object at a given index i or return all if i is none. 
+        Return object at a given index i or return all if i is none.
         """
         if i is not None:
             return list(cls)[i]
