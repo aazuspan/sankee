@@ -1,3 +1,5 @@
 # Bash commands to run after building in Binder to allow interactive maps
-jupyter contrib nbextension install --user
-jupyter nbextension enable --py widgetsnbextension
+pip install ipyleaflet==0.13.6
+pip install sankee
+pip install geemap
+jupyter nbextension enable --py --sys-prefix ipyleaflet
