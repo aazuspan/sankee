@@ -78,7 +78,7 @@ scripts/run-tests.bash
 
 ### Using a Premade Dataset
 
-Datasets in `sankee` are used to apply labels and colors to classified imagery (eg. a value of 42 in an NLCD 2016 image should be labeled "Evergeen forest" and colored green). `sankee` includes premade `Dataset` objects for common classified datasets in GEE like NLCD, MODIS land cover, and CGLS. See [datasets](https://github.com/aazuspan/sankee#Modular-Datasets) for a detailed explanation.
+Datasets in `sankee` are used to apply labels and colors to classified imagery (e.g. a value of 42 in an NLCD 2016 image should be labeled "Evergeen forest" and colored green). `sankee` includes premade `Dataset` objects for common classified datasets in GEE like NLCD, MODIS land cover, and CGLS. See [datasets](https://github.com/aazuspan/sankee#Modular-Datasets) for a detailed explanation.
 
 ```python
 import ee
@@ -96,10 +96,15 @@ label_list = ["2001", "2016"]
 
 # Define an area of interest
 vegas = ee.Geometry.Polygon(
-        [[[-115.4127152226893, 36.29589873319828],
-          [-115.4127152226893, 36.12082334399102],
-          [-115.3248245976893, 36.12082334399102],
-          [-115.3248245976893, 36.29589873319828]]])
+    [[[-115.01184401606046, 36.24170785506492],
+      [-114.98849806879484, 36.29928186470082],
+      [-115.25628981684171, 36.35238941394592],
+      [-115.34692702387296, 36.310348922031565],
+      [-115.37988600824796, 36.160811202271944],
+      [-115.30298171137296, 36.03653336474891],
+      [-115.25628981684171, 36.05207884201088],
+      [-115.26590285395109, 36.226199908103695],
+      [-115.19174513910734, 36.25499793268206]]])
 
 # Choose a title to display over your plot (optional)
 title = "Las Vegas Urban Sprawl, 2001 - 2016"
