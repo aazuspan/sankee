@@ -116,6 +116,17 @@ plot
 
 [![NLCD Las Vegas urbanization example Sankey plot](examples/NLCD.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/NLCD.html)
 
+#### Note on NLCD1992
+The 1992 version of NLCD used a different legend and classification technique than later versions. For this reason, comparisons should not be made for analysis purposes. If you do want to compare NLCD1992 with later years, you will need to use the `sankee.datasets.convert_NLCD1992_to_2016` function, as shown below. This function uses the crosswalk published in Completion of the National Land Cover Database (NLCD) 1992–2001 Land Cover Change Retrofit Product by Fry et al., 2009.
+
+```python
+nlcd1992 = sankee.datasets.convert_NLCD1992_to_2016(ee.Image(f"USGS/NLCD/NLCD1992"))
+nlcd2016 = ee.Image(f"USGS/NLCD/NLCD2016")
+
+# Build a list of images
+img_list = [nlcd1992, nlcd2016]
+```
+
 ### Using a Custom Dataset
 
 Datasets can also be manually defined for custom images. In this example, we'll classify 1-year and 5-year post-fire Landsat imagery using NDVI and visualize plant recovery using `sankee`.
