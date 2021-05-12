@@ -90,7 +90,7 @@ ee.Initialize()
 dataset = sankee.datasets.NLCD2016
 
 # Build a list of images
-img_list = [ee.Image(f"USGS/NLCD/NLCD2001"), ee.Image(f"USGS/NLCD/NLCD2016")]
+img_list = [ee.Image("USGS/NLCD/NLCD2001"), ee.Image("USGS/NLCD/NLCD2016")]
 # Build a matching list of labels for the images (optional)
 label_list = ["2001", "2016"]
 
