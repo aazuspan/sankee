@@ -89,8 +89,12 @@ ee.Initialize()
 # Choose a premade dataset object that contains band, label, and palette information for NLCD
 dataset = sankee.datasets.NLCD2016
 
+# Select images to compare
+nlcd2001 = ee.Image("USGS/NLCD/NLCD2001")
+nlcd2016 = ee.Image("USGS/NLCD/NLCD2016")
+
 # Build a list of images
-img_list = [ee.Image("USGS/NLCD/NLCD2001"), ee.Image("USGS/NLCD/NLCD2016")]
+img_list = [nlcd2001, nlcd2016]
 # Build a matching list of labels for the images (optional)
 label_list = ["2001", "2016"]
 
@@ -117,14 +121,11 @@ plot
 [![NLCD Las Vegas urbanization example Sankey plot](examples/NLCD.png)](https://htmlpreview.github.io/?https://github.com/aazuspan/sankee/main/examples/NLCD.html)
 
 #### Note on NLCD1992
-The 1992 version of NLCD used a different legend and classification technique than later versions. For this reason, comparisons should not be made for analysis purposes. If you do want to compare NLCD1992 with later years, you will need to use the `sankee.datasets.convert_NLCD1992_to_2016` function, as shown below. This function uses the crosswalk published in Completion of the National Land Cover Database (NLCD) 1992–2001 Land Cover Change Retrofit Product by Fry et al., 2009.
+The 1992 version of NLCD used a different legend and classification technique than later versions. Making comparisons between 1992 and later years is not recommended, but can technically be done by reclassifying 1992 data using the `sankee.datasets.convert_NLCD1992_to_2016` function, as shown below. This function uses the crosswalk published in [Completion of the National Land Cover Database (NLCD) 1992–2001 Land Cover Change Retrofit Product](https://pubs.usgs.gov/of/2008/1379/pdf/ofr2008-1379.pdf) by Fry et al., 2009 to approximately match 1992 classes to the classes used in later years. However, users should be aware that changes in classification between years may be due to changes in classification method rather than changes actual land cover.
 
 ```python
-nlcd1992 = sankee.datasets.convert_NLCD1992_to_2016(ee.Image(f"USGS/NLCD/NLCD1992"))
-nlcd2016 = ee.Image(f"USGS/NLCD/NLCD2016")
-
-# Build a list of images
-img_list = [nlcd1992, nlcd2016]
+# Reclassify NLCD1992 before attempting to make comparisons with other NLCD years
+nlcd1992 = sankee.datasets.convert_NLCD1992_to_2016(ee.Image("USGS/NLCD/NLCD1992"))
 ```
 
 ### Using a Custom Dataset
