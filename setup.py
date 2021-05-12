@@ -9,7 +9,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="sankee",
-    version="0.0.2",
+    version="0.0.3",
     description="Visualize classified time series data with interactive Sankey plots in Google Earth Engine.",
     long_description=long_description,
     long_description_content_type="text/markdown",
