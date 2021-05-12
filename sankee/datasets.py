@@ -338,3 +338,32 @@ class datasets(Dataset, Enum):
             return list(cls)[i]
 
         return [e for e in cls]
+
+    def convert_NLCD1992_to_2016(img):
+        """
+        Reclassify NLCD 1992 data to match the NLCD 2016 legend. Direct comparisons between NLCD 1992 and later years
+        should still be done with caution due to differences in the classification method, but make classes roughly
+        comparable.
+
+        See USGS Open-File Report 2008-1379 for a detailed discussion and for the crosswalk table used below.
+        https://pubs.usgs.gov/of/2008/1379/pdf/ofr2008-1379.pdf
+        """
+        img = img.select("landcover")
+
+        img = (img
+            .where(img.eq(85), 21)
+            .where(img.eq(21), 22)
+            .where(img.eq(22), 23)
+            .where(img.eq(23), 24)
+            .where(img.eq(32), 31)
+            .where(img.eq(33), 31)
+            .where(img.eq(42), 42)
+            .where(img.eq(51), 52)
+            .where(img.eq(61), 82)
+            .where(img.eq(83), 82)
+            .where(img.eq(84), 82)
+            .where(img.eq(91), 90)
+            .where(img.eq(92), 95)
+        )
+
+        return img
