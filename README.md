@@ -24,6 +24,7 @@ Visualize changes in classified time series data with interactive Sankey plots i
   - [Modular Datasets](https://github.com/aazuspan/sankee#Modular-Datasets)
   - [Flexible Time Series](https://github.com/aazuspan/sankee#Flexible-Time-Series)
   - [Integration with geemap](https://github.com/aazuspan/sankee#Integration-with-geemap)
+  - [Editable Plots](https://github.com/aazuspan/sankee#Editable-Plots)
 - [API](https://github.com/aazuspan/sankee#API)
 - [Contributing](https://github.com/aazuspan/sankee#Contributing)
 
@@ -224,7 +225,15 @@ sankee.datasets.CGLS_LC100.get_images(3)
 
 ### Integration with geemap
 
-[geemap](https://github.com/giswqs/geemap) is a great tool for exploring changes in GEE imagery before creating plots with `sankee`. Integration is quick and easy. Just use `geemap` like you normally would, and pass the images and feature geometries to `sankee` for plotting. Click [here](https://mybinder.org/v2/gh/aazuspan/sankee/HEAD?filepath=examples%2Fexample_snow_and_ice.ipynb) for an interactive notebook that demonstrates using `sankee` with `geemap`. 
+[geemap](https://github.com/giswqs/geemap) is a great tool for exploring changes in GEE imagery before creating plots with `sankee`. Integration is quick and easy. Just use `geemap` like you normally would, and pass the images and feature geometries to `sankee` for plotting. Click [here](https://mybinder.org/v2/gh/aazuspan/sankee/HEAD?filepath=examples%2Fexample_snow_and_ice.ipynb) for an interactive notebook that demonstrates using `sankee` with `geemap`.
+
+### Editable Plots
+
+The plot returned by `sankee.sankify` is a `plotly.graph_objs._figure.Figure` which can be easily edited after creation like any other Plotly [Graph Object](https://plotly.com/python/graph-objects/). The [`plot.update_layout`](https://plotly.com/python/reference/layout/) function has many options which can be used to change things like [plot size](https://plotly.com/python/setting-graph-size/) or [label styles](https://plotly.com/python/figure-labels/). For example, we can update plot size and title color of an existing plot using the code below. 
+```python
+plot = sankee.sankify( ... )
+plot.update_layout(height=1000, width=2400, title_font_color="red")
+```
 
 # API
 
@@ -317,6 +326,17 @@ sankee.datasets.get(0)
 
 >> <sankee.datasets.Dataset> NLCD: USGS National Land Cover Database
 ```
+
+### sankee.datasets.convert_NLCD1992_to_2016(img)
+
+Convert the values of an NLCD1992 image to match the legend of other NLCD years using the Fry et al., 2009 crosswalk. This function **must** be run before attempting to use NLCD1992 with the NLCD2016 dataset because the 1992 legend contains values that are not included in the 2016 dataset. This function should be used with caution because NLCD1992 is not directly comparable with later years due to differences in the classification methodology.  
+
+**Arguments**
+- img (ee.Image)
+  - The NLCD1992 image to reclassify.
+
+**Returns** (ee.Image)
+- An image with the 1992 NLCD legend reclassified to match the 2016 NLCD legend.
 
 ### sankee.datasets.Dataset.get_images(_max_images_)
 
