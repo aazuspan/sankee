@@ -79,7 +79,7 @@ scripts/run-tests.bash
 
 ### Using a Premade Dataset
 
-Datasets in `sankee` are used to apply labels and colors to classified imagery (e.g. a value of 42 in an NLCD 2016 image should be labeled "Evergeen forest" and colored green). `sankee` includes premade `Dataset` objects for common classified datasets in GEE like NLCD, MODIS land cover, and CGLS. See [datasets](https://github.com/aazuspan/sankee#Modular-Datasets) for a detailed explanation.
+Datasets in `sankee` are used to apply labels and colors to classified imagery (e.g. a value of 42 in an NLCD 2016 image should be labeled "Evergeen forest" and colored green). `sankee` includes premade `Dataset` objects for common classified datasets in GEE like the National Land Cover Dataset (NLCD), MODIS land cover, Copernicus Global Land Service (CGLS), and the Landscape Change Monitoring System (LCMS). See [datasets](https://github.com/aazuspan/sankee#Modular-Datasets) for a detailed explanation.
 
 ```python
 import ee
@@ -202,7 +202,9 @@ Any classified image can be visualized by manually defining a band, palette, and
 # List all sankee built-in datasets
 sankee.datasets.names()
 
->> ['NLCD2016',
+>> ['LCMS_LU',
+    'LCMS_LC',
+    'NLCD2016',
     'MODIS_LC_TYPE1',
     'MODIS_LC_TYPE2',
     'MODIS_LC_TYPE3',
@@ -298,13 +300,6 @@ Get a list of supported dataset names. Names can be used to access datasets usin
 
 - A list of strings for supported dataset names.
 
-**Example**
-
-```python
-sankee.datasets.names()
-
->> ['NLCD2016', 'MODIS_LC_TYPE1', 'MODIS_LC_TYPE2', 'MODIS_LC_TYPE3', 'CGLS_LC100']
-```
 
 ### sankee.datasets.get(_i_)
 
@@ -324,7 +319,7 @@ Get a list of supported `sankee.datasets.Dataset` objects.
 # Get the first Dataset object
 sankee.datasets.get(0)
 
->> <sankee.datasets.Dataset> NLCD: USGS National Land Cover Database
+>> <sankee.datasets.Dataset> USFS Landscape Change Monitoring System v2020.5
 ```
 
 ### sankee.datasets.convert_NLCD1992_to_2016(img)
