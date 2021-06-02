@@ -101,6 +101,69 @@ class Dataset:
 
 
 class datasets(Dataset, Enum):
+    LCMS_LU = (
+        "USFS/GTAC/LCMS/v2020-5",
+        "Land_Use",
+        {
+            1: "Agriculture",
+            2: "Developed",
+            3: "Forest",
+            4: "Non-Forest Wetland",
+            5: "Other",
+            6: "Rangeland or Pasture",
+            7: "No Data"
+        },
+        {
+            1: "#efff6b",
+            2: "#ff2ff8", 
+            3: "#1b9d0c",
+            4: "#97ffff",
+            5: "#a1a1a1",
+            6: "#c2b34a",
+            7: "#1B1716",
+        }
+    )
+    
+    LCMS_LC = (
+        "USFS/GTAC/LCMS/v2020-5",
+        "Land_Cover",
+        {
+            1: "Trees",
+            2: "Tall Shrubs & Trees Mix",
+            3: "Shrubs & Trees Mix",
+            4: "Grass/Forb/Herb & Trees Mix",
+            5: "Barren & Trees Mix",
+            6: "Tall Shrubs",
+            7: "Shrubs",
+            8: "Grass/Forb/Herb & Shrubs Mix",
+            9: "Barren & Shrubs Mix",
+            10: "Grass/Forb/Herb",
+            11: "Barren & Grass/Forb/Herb Mix",
+            12: "Barren or Impervious",
+            13: "Snow or Ice",
+            14: "Water",
+            15: "No Data"
+        },
+        {
+            1: "#005e00", 
+            2: "#008000", 
+            3: "#00cc00", 
+            4: "#b3ff1a", 
+            5: "#99ff99", 
+            6: "#b30088", 
+            7: "#e68a00", 
+            8: "#ffad33", 
+            9: "#ffe0b3", 
+            10: "#ffff00", 
+            11: "#AA7700", 
+            12: "#d3bf9b", 
+            13: "#ffffff", 
+            14: "#4780f3", 
+            15: "#1B1716", 
+        },
+
+    )
+
     NLCD2016 = (
         "USGS/NLCD",
         "landcover",
