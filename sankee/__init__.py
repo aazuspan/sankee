@@ -1,4 +1,4 @@
 from sankee.core import sankify
 from sankee.datasets import datasets
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
