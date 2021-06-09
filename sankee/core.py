@@ -69,10 +69,9 @@ def sankify(
 
     labeled_images = _label_images(image_list, label_list)
     sample_data = _collect_sample_data(labeled_images, region, dataset, label_list, n, scale, seed)
-
-    dataset.check_data_is_compatible(sample_data)
-
     cleaned_data = _clean_data(sample_data, exclude, max_classes, dropna=dropna)
+
+    dataset.check_data_is_compatible(cleaned_data)
 
     return _generate_sankey_plot(cleaned_data, dataset, title)
 
