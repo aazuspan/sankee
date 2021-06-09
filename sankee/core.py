@@ -194,7 +194,7 @@ def _extract_values_from_images_at_points(image_list, sample_points, band, scale
     """
 
     def extract_values_from_images_at_one_point(point):
-        point_location = point.geometry()
+        point_location = ee.Element.geometry(point)
 
         def extract_value_from_image_at_one_point(img, feature):
             cover = ee.Image(img).reduceRegion(ee.Reducer.first(), point_location, scale).get(band)
