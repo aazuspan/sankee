@@ -171,7 +171,20 @@ def _collect_sample_data(image_list, region, dataset, label_list, n=100, scale=N
         else:
             raise e
 
+    _check_for_missing_samples(data, label_list)
+
     return data[label_list]
+
+
+def _check_for_missing_samples(data, label_list):
+    """
+    Check that the sampled data has a column for each label in the label list. If not, it may be that sampling occured
+    outside of the image bounds.
+    """
+    missing_labels = [label for label in label_list if label not in data.columns]
+    if missing_labels:
+        raise Exception(f"No valid samples were collected in these images: {missing_labels}. Check that the sampling"\
+        " region overlaps the image bounds.")
 
 
 def _extract_values_from_images_at_points(image_list, sample_points, band, scale):
