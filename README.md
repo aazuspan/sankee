@@ -229,6 +229,8 @@ sankee.datasets.CGLS_LC100.get_images(3)
 
 [geemap](https://github.com/giswqs/geemap) is a great tool for exploring changes in GEE imagery before creating plots with `sankee`. Integration is quick and easy. Just use `geemap` like you normally would, and pass the images and feature geometries to `sankee` for plotting. Click [here](https://mybinder.org/v2/gh/aazuspan/sankee/HEAD?filepath=examples%2Fexample_snow_and_ice.ipynb) for an interactive notebook that demonstrates using `sankee` with `geemap`.
 
+The `sankee` package is also integrated directly into `geemap`, giving users a code-free interface to `sankee's` premade datasets (thanks [Qiusheng Wu](https://github.com/giswqs)!). [Documentation](https://geemap.org/notebooks/75_sankee/) and [video tutorials](https://www.youtube.com/watch?v=IZWpJYX6w8I) are available from `geemap`. Support for custom datasets is [coming soon](https://github.com/giswqs/geemap/issues/471) to `geemap`!
+
 ### Editable Plots
 
 The plot returned by `sankee.sankify` is a `plotly.graph_objs._figure.Figure` which can be easily edited after creation like any other Plotly [Graph Object](https://plotly.com/python/graph-objects/). The [`plot.update_layout`](https://plotly.com/python/reference/layout/) function has many options which can be used to change things like [plot size](https://plotly.com/python/setting-graph-size/) or [label styles](https://plotly.com/python/figure-labels/). For example, we can update plot size and title color of an existing plot using the code below. 
