@@ -3,6 +3,7 @@
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/aazuspan/sankee/HEAD?filepath=docs%2Fexamples%2Fmodis_snow_and_ice.ipynb)
 [![conda-forge link](https://img.shields.io/conda/vn/conda-forge/sankee)](https://anaconda.org/conda-forge/sankee)
 [![conda-forge link](https://img.shields.io/pypi/v/sankee)](https://pypi.org/project/sankee)
+[![Read the Docs](https://readthedocs.org/projects/sankee/badge/?version=latest&style=flat)](https://sankee.readthedocs.io/en/latest/?badge=latest)
 [![license link](https://img.shields.io/github/license/aazuspan/sankee)](https://opensource.org/licenses/GPL-3.0)
 
 Visualize changes in classified time series data with interactive Sankey plots in Google Earth Engine
