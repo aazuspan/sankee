@@ -8,50 +8,69 @@ from sankee import utils
 class Dataset:
     def __init__(self, collection_name, band, labels, palette):
         """
-        :param str band: The name of the image band that contains class values.
-        :param dict labels: A dictionary matching class values to their corresponding labels.
-        :param dict palette: A dictioanry matching class values to their corresponding hex colors.
+        Parameters
+        ----------
+        collection_name : str
+            The :code:`system:id` of the :code:`ee.ImageCollection` representing the dataset.
+        band : str 
+            The name of the image band that contains class values.
+        labels : dict 
+            A dictionary matching class values to their corresponding labels.
+        palette : dict 
+            A dictionary matching class values to their corresponding hex colors.
         """
         self.collection_name = collection_name
         self.band = band
         self.labels = labels
         self.palette = palette
 
-    def __repr__(self):
-        return f"<sankee.datasets.Dataset> {self.title}"
-
     @property
     def keys(self):
+        """Return the label keys of the dataset.
+        """
         return list(self.labels.keys())
 
     @property
     def df(self):
-        """
-        Return a Pandas dataframe describing the dataset parameters
+        """Return a Pandas dataframe describing the dataset parameters.
         """
         return pd.DataFrame({"id": self.keys, "label": self.labels.values(), "color": self.palette.values()})
 
     @property
-    def title(self):
-        return self.collection.get("title").getInfo()
-
-    @property
     def collection(self):
+        """The :code:`ee.ImageCollection` representing the dataset.
+        """
         return ee.ImageCollection(self.collection_name)
 
-    def id(self):
-        return self.collection.get("system:id").getInfo()
-
     def get_color(self, label):
-        """
-        Take a label and return the associated color from the palette.
+        """Take a label and return the associated color from the dataset's palette.
+
+        Parameters
+        ----------
+        label : str
+            The label of a class in the dataset.
+
+        Returns
+        -------
+        str
+            The color associated with the label.
         """
         label_key = [k for k, v in self.labels.items() if v == label][0]
         return self.palette[label_key]
 
     def get_images(self, max_images=20):
         """
-        List the names of the first n images in the dataset collection up to max_images
+        List the names of the first n images in the dataset collection up to :code:`max_images`.
+
+        Parameters
+        ----------
+        max_images : int, default 20
+            The number of images to return.
+
+        Returns
+        -------
+        List[str]
+            A list of :code:`system:id` values for the first n images.
         """
         img_list = []
         for img in self.collection.toList(max_images).getInfo():
@@ -101,6 +120,32 @@ class Dataset:
 
 
 class datasets(Dataset, Enum):
+    """Premade dataset objects with attributes for plotting classified Image Collections.
+    
+    Attributes
+    ----------
+    LCMS_LU
+        USFS Landscape Change Monitoring System Land Use.
+        https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
+    LCMS_LC
+        USFS Landscape Change Monitoring System Land Cover.
+        https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
+    NLCD_2016
+        National Land Cover Database 2016.
+        https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2016_REL
+    MODIS_LC_TYPE1
+        MODIS Land Cover Type 1: Annual International Geosphere-Biosphere Programme (IGBP) classification.
+        https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
+    MODIS_LC_TYPE2
+        MODIS Land Cover Type 2: Annual University of Maryland (UMD) classification
+        https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
+    MODIS_LC_TYPE3
+        MODIS Land Cover Type 3: Annual Leaf Area Index (LAI) classification
+        https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
+    CGLS_LC100
+        Copernicus Global Land Cover
+        https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_Landcover_100m_Proba-V-C3_Global
+    """
     LCMS_LU = (
         "USFS/GTAC/LCMS/v2020-5",
         "Land_Use",
@@ -389,6 +434,11 @@ class datasets(Dataset, Enum):
     def names(cls):
         """
         Return string names of all datasets.
+
+        Returns
+        -------
+        List[str]
+            Names of all premade datasets.
         """
         return [e.name for e in cls]
 
@@ -396,6 +446,16 @@ class datasets(Dataset, Enum):
     def get(cls, i=None):
         """
         Return object at a given index i or return all if i is none.
+
+        Parameters
+        ----------
+        i : Optional[int]
+            If i is provided, return the dataset at index i.
+        
+        Returns
+        -------
+        List[sankee.datasets.Dataset]
+            A list of all :code:`Dataset` objects.
         """
         if i is not None:
             return list(cls)[i]
@@ -408,7 +468,19 @@ class datasets(Dataset, Enum):
         should still be done with caution due to differences in the classification method, but make classes roughly
         comparable.
 
-        See USGS Open-File Report 2008-1379 for a detailed discussion and for the crosswalk table used below.
+        Parameters
+        ----------
+        img : ee.Image
+            An NLCD 1992 Land Cover image.
+
+        Returns
+        -------
+        ee.Image
+            The input images with values cross-walked to the NLCD 2016 key.
+
+        References
+        ----------
+        See USGS Open-File Report 2008-1379 for a detailed discussion and for the crosswalk table used.
         https://pubs.usgs.gov/of/2008/1379/pdf/ofr2008-1379.pdf
         """
         img = img.select("landcover")
