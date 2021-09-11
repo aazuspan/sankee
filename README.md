@@ -3,6 +3,7 @@
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/aazuspan/sankee/HEAD?filepath=docs%2Fexamples%2Fmodis_snow_and_ice.ipynb)
 [![conda-forge link](https://img.shields.io/conda/vn/conda-forge/sankee)](https://anaconda.org/conda-forge/sankee)
 [![conda-forge link](https://img.shields.io/pypi/v/sankee)](https://pypi.org/project/sankee)
+[![Read the Docs](https://readthedocs.org/projects/sankee/badge/?version=latest&style=flat)](https://sankee.readthedocs.io/en/latest/?badge=latest)
 [![license link](https://img.shields.io/github/license/aazuspan/sankee)](https://opensource.org/licenses/GPL-3.0)
 
 Visualize changes in classified time series data with interactive Sankey plots in Google Earth Engine
@@ -28,9 +29,9 @@ Visualize changes in classified time series data with interactive Sankey plots i
 
 ## Description
 
-`sankee` provides a dead-simple API that combines the power of [GEE](https://github.com/google/earthengine-api) and [Plotly](https://github.com/plotly/plotly.py) to visualize changes in land cover, plant health, burn severity, or any other classified imagery over a time series in a region of interst using interactive Sankey plots. Use a library of built-in datasets like NLCD, MODIS Land Cover, or CGLS for convenience or define your own custom datasets for flexibility.
+`sankee` provides a dead-simple API that combines the power of [Google Earth Engine](https://github.com/google/earthengine-api) and [Plotly](https://github.com/plotly/plotly.py) to visualize changes in land cover, plant health, burn severity, or any other classified imagery over a time series in a region of interst using interactive Sankey plots. Use a library of built-in datasets like NLCD, MODIS Land Cover, or CGLS for convenience or define your own custom datasets for flexibility. `sankee` works by randomly sampling points in a time series of classified imagery to visualize how cover types changed over time.
 
-`sankee` works by randomly sampling points in a time series of classified imagery to visualize how cover types changed over time.
+`sankee` can be found in the [Earth Engine Developer Resources](https://developers.google.com/earth-engine/tutorials/community/developer-resources#python)!
 
 ## Installation
 
