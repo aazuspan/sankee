@@ -5,6 +5,7 @@
 [![conda-forge link](https://img.shields.io/pypi/v/sankee)](https://pypi.org/project/sankee)
 [![Read the Docs](https://readthedocs.org/projects/sankee/badge/?version=latest&style=flat)](https://sankee.readthedocs.io/en/latest/?badge=latest)
 [![license link](https://img.shields.io/github/license/aazuspan/sankee)](https://opensource.org/licenses/GPL-3.0)
+[![Downloads](https://pepy.tech/badge/sankee)](https://pepy.tech/project/sankee)
 
 Visualize changes in classified time series data with interactive Sankey plots in Google Earth Engine
 
