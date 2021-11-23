@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('..'))
 project = 'sankee'
 copyright = '2021, Aaron Zuspan'
 author = 'Aaron Zuspan'
-version = 'v0.0.5'
+version = 'v0.0.6'
 
 
 # -- General configuration ---------------------------------------------------
