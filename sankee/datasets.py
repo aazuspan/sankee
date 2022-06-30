@@ -96,35 +96,11 @@ class Dataset:
             img_list.append("...")
         return img_list
 
-    def check_is_complete(self):
-        """
-        Run tests to ensure parameters are complete. Raise exceptions if not.
-        """
-        if not self.band:
-            raise ValueError("Provide dataset or band.")
-        if not self.labels:
-            raise ValueError("Provide dataset or labels.")
-        if not self.palette:
-            raise ValueError("Provide dataset or palette.")
-        return 0
-
-    def check_data_is_compatible(self, data):
-        """
-        Check for values that are present in data and are not present in labels or palette and raise an error if any are
-        found.
-        """
-        missing_keys = []
-
-        for _, col in data.iteritems():
-            missing_keys += utils.get_missing_keys(col, self.labels)
-
-        if missing_keys:
-            raise Exception(
-                f"The following values are present in the data and undefined in the labels and palette: {np.unique(missing_keys)}"
-            )
-
     def get_year(self, year):
         """Get one year's image from the dataset. This should work for any dataset that contains one image per year."""
+        if year not in self.years:
+            raise ValueError(f"This dataset does not include year `{year}`. Choose from {self.years}.")
+
         img = self.collection.filterDate(str(year), str(year + 1)).first()
         return img.select(self.band)
 
@@ -132,11 +108,11 @@ class Dataset:
         """Get an ee.List of all years in the collection."""
         return self.collection.aggregate_array("system:time_start").map(lambda ms: ee.Date(ms).get("year")).distinct()
 
-    def sankify(self, years, region, exclude=None, max_classes=None, n=100, title=None, scale=None, seed=0, dropna=True):
+    def sankify(self, years, region, exclude=None, max_classes=None, n=100, title=None, scale=None, seed=0):
         imgs = [self.get_year(year) for year in years]
         exclude = exclude if exclude is not None else []
         exclude = exclude + [self.nodata] if self.nodata is not None else exclude
-        return sankify(image_list=imgs, region=region, label_list=years, dataset=self, exclude=exclude, max_classes=max_classes, n=n, title=title, scale=scale, seed=seed, dropna=dropna)
+        return sankify(image_list=imgs, region=region, label_list=years, labels=self.labels, band=self.band, palette=self.palette, exclude=exclude, max_classes=max_classes, n=n, title=title, scale=scale, seed=seed)
 
 
 class LCMS_Dataset(Dataset):
