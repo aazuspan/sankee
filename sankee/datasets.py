@@ -68,8 +68,7 @@ class Dataset:
         return ee.ImageCollection(self.id)
 
     def get_year(self, year: int) -> ee.Image:
-        """Get one year's image from the dataset. This should work for any dataset that contains one
-        image per year."""
+        """Get one year's image from the dataset."""
         if year not in self.years:
             raise ValueError(
                 f"This dataset does not include year `{year}`. Choose from {self.years}."
@@ -192,7 +191,6 @@ class MODIS_Dataset(Dataset):
         return img.select(self.band)
 
 
-# https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
 LCMS_LU = LCMS_Dataset(
     name="LCMS LU - Land Change Monitoring System Land Use",
     id="USFS/GTAC/LCMS/v2021-7",
@@ -262,7 +260,6 @@ LCMS_LC = LCMS_Dataset(
     nodata=15,
 )
 
-# https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2019_REL_NLCD
 NLCD = Dataset(
     name="NLCD - National Land Cover Database",
     id="USGS/NLCD_RELEASES/2019_REL/NLCD",
@@ -317,8 +314,6 @@ NLCD = Dataset(
     nodata=1,
 )
 
-
-# https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
 MODIS_LC_TYPE1 = MODIS_Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 1",
     id="MODIS/006/MCD12Q1",
