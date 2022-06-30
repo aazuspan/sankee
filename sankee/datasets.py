@@ -3,6 +3,7 @@ import ee
 import pandas as pd
 import numpy as np
 from sankee import utils
+from sankee import sankify
 
 class Dataset:
     def __init__(self, name, id, band, labels, palette, years):
@@ -126,6 +127,10 @@ class Dataset:
     def list_years(self):
         """Get an ee.List of all years in the collection."""
         return self.collection.aggregate_array("system:time_start").map(lambda ms: ee.Date(ms).get("year")).distinct()
+
+    def sankify(self, years, region, exclude=None, max_classes=None, n=100, title=None, scale=None, seed=0, dropna=True):
+        imgs = [self.get_year(year) for year in years]
+        return sankify(image_list=imgs, region=region, label_list=years, dataset=self, exclude=exclude, max_classes=max_classes, n=n, title=title, scale=scale, seed=seed, dropna=dropna)
 
 
 class LCMS_Dataset(Dataset):
