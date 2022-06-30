@@ -113,7 +113,7 @@ class TestSankee(unittest.TestCase):
         Test that NA values will be dropped by _clean_data
         """
         test_input = pd.DataFrame({0: [0.0, np.nan, 2.0], 1: [1, 2, 3]})
-        cleaned = sankee.core._clean_data(test_input, dropna=True)
+        cleaned = sankee.core._clean_data(test_input)
         target = pd.DataFrame({0: [0.0, 2.0], 1: [1, 3]})
 
         self.assertTrue(np.array_equal(cleaned, target))
@@ -146,104 +146,22 @@ class TestSankee(unittest.TestCase):
 
         self.assertTrue(np.array_equal(cleaned, target))
 
-    def test_missing_band(self):
-        """
-        If no dataset or band is provided, a ValueError should be raised.
-        """
-        with self.assertRaises(ValueError):
-            sankee.core.sankify(
-                TEST_IMG_LIST,
-                TEST_REGION,
-                TEST_LABEL_LIST,
-                dataset=None,
-                band=None,
-                labels=TEST_LABELS,
-                palette=TEST_PALETTE,
-            )
-
-    def test_missing_label(self):
-        """
-        If no dataset or label is provided, a ValueError should be raised.
-        """
-        with self.assertRaises(ValueError):
-            sankee.core.sankify(
-                TEST_IMG_LIST,
-                TEST_REGION,
-                TEST_LABEL_LIST,
-                dataset=None,
-                band=TEST_BAND,
-                labels=None,
-                palette=TEST_PALETTE,
-            )
-
-    def test_missing_palette(self):
-        """
-        If no dataset or palette is provided, a ValueError should be raised.
-        """
-        with self.assertRaises(ValueError):
-            sankee.core.sankify(
-                TEST_IMG_LIST,
-                TEST_REGION,
-                TEST_LABEL_LIST,
-                dataset=None,
-                band=TEST_BAND,
-                labels=TEST_LABELS,
-                palette=None,
-            )
 
     def test_mismatched_label_list(self):
         """
         If the label list is a different length than the image list, a ValueError should be raised.
         """
         with self.assertRaises(ValueError):
-            sankee.core.sankify(TEST_IMG_LIST, TEST_REGION, ["2001", "2010", "2020"], dataset=TEST_DATASET)
+            sankee.sankify(image_list=TEST_IMG_LIST, region=TEST_REGION, label_list=["2001", "2010", "2020"], band=TEST_BAND, labels=TEST_LABELS, palette=TEST_PALETTE)
         with self.assertRaises(ValueError):
-            sankee.core.sankify(TEST_IMG_LIST, TEST_REGION, ["2001"], dataset=TEST_DATASET)
-
-    def test_build_dataset(self):
-        """
-        Any parameters supplied to build dataset should overwrite the dataset parameters.
-        """
-        test_band = "test"
-        test_labels = {0: "first label", 1: "second label"}
-        test_palette = {0: "first color", 1: "second color"}
-        dataset = sankee.core._build_dataset(
-            dataset=TEST_DATASET, band=test_band, labels=test_labels, palette=test_palette
-        )
-
-        self.assertEqual(dataset.band, test_band)
-        self.assertEqual(dataset.labels, test_labels)
-        self.assertEqual(dataset.palette, test_palette)
+            sankee.sankify(image_list=TEST_IMG_LIST, region=TEST_REGION, label_list=["2001"], band=TEST_BAND, labels=TEST_LABELS, palette=TEST_PALETTE)
 
     def test_bad_band(self):
         """
         If a band name is passed to _collect_sample_data and it's not in the image, a ValueError should be raised.
         """
-        dataset = sankee.core._build_dataset(dataset=TEST_DATASET, band="bad_band")
-
         with self.assertRaises(ValueError):
-            sankee.core._collect_sample_data(ee.ImageCollection(TEST_IMG_LIST), TEST_REGION, dataset, TEST_LABEL_LIST)
-
-    def test_missing_label_list(self):
-        """
-        If no label list is passed to build_label_list, a sequential numeric label list should be created
-        """
-        label_list = sankee.core._build_label_list(TEST_IMG_LIST, label_list=None)
-        target = ["0", "1"]
-        self.assertEqual(label_list, target)
-
-    def test_dataset_unchanged_by_build(self):
-        """
-        The core._build_dataset function should not permanently affect a dataset's attributes when it uses it to build a
-        new dataset.
-        """
-        start_band = TEST_DATASET.band
-
-        sankee.core._build_dataset(dataset=TEST_DATASET, band="new_band")
-
-        end_band = TEST_DATASET.band
-
-        self.assertEqual(start_band, end_band)
+            sankee.core._collect_sample_data(ee.ImageCollection(TEST_IMG_LIST), region=TEST_REGION, band="bad_band", label_list=TEST_LABEL_LIST)
 
     def test_format_for_sankey_with_two_periods(self):
         """
@@ -258,7 +176,7 @@ class TestSankee(unittest.TestCase):
             source,
             target,
             value,
-        ) = sankee.core._format_for_sankey(TEST_DATA, TEST_DATASET)
+        ) = sankee.core._format_for_sankey(TEST_DATA, TEST_LABELS, TEST_PALETTE)
 
         self.assertEqual(node_labels, ["start", "start", "start", "end", "end", "end", "end"])
         self.assertEqual(
@@ -301,7 +219,7 @@ class TestSankee(unittest.TestCase):
             source,
             target,
             value,
-        ) = sankee.core._format_for_sankey(THREE_PERIOD_TEST_DATA, TEST_DATASET)
+        ) = sankee.core._format_for_sankey(THREE_PERIOD_TEST_DATA, TEST_LABELS, TEST_PALETTE)
 
         self.assertEqual(
             node_labels, ["start", "start", "start", "mid", "mid", "mid", "mid", "end", "end", "end", "end"]
