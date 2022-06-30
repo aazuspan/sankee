@@ -32,8 +32,6 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "earthengine-api>=0.1.230",
-        "ipykernel",
-        "nbformat>=4.2.0",
         "numpy",
         "pandas",
         "plotly>=5.2.2",
