@@ -306,7 +306,7 @@ NLCD = Dataset(
     years = [2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019]
 )
 
-# TODO: Deprecate this somehow
+# Kept for backwards compatibility
 NLCD2016 = NLCD
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
