@@ -133,10 +133,13 @@ class LCMS_Dataset(Dataset):
         """Get one year's image from the dataset. LCMS splits up each year into two images: CONUS and
         SEAK. This merges those into a single image."""
         collection = self.collection.filter(ee.Filter.eq("year", year))
-        merged = collection.mosaic().select(self.band)
+        merged = collection.mosaic().select(self.band).clip(collection.geometry())
+        
         props = collection.first().propertyNames().remove("study_area")
-        merged = ee.Element.copyProperties(merged, collection.first(), props)
-        return ee.Image(merged)
+        merged = ee.Image(ee.Element.copyProperties(merged, collection.first(), props))
+
+        merged = merged.setDefaultProjection("EPSG:5070")
+        return merged
 
 
 def convert_NLCD1992_to_2016(img):
