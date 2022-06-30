@@ -297,17 +297,16 @@ def _group_and_format_data(data, dataset):
     Take raw data, group it into groups of two, and generate a formatted dataframe.
     """
     current_index = 0
-    formatted_data = pd.DataFrame()
 
+    dfs = []
     for group in _group_columns(data):
         sankified = _reformat_group(data, group, dataset, start_index=current_index)
         # The start index of the next column group will be the end index of this column group. This sets the index
         # offset to achieve that.
         current_index = sankified.target.min()
+        dfs.append(sankified)
 
-        formatted_data = formatted_data.append(sankified)
-
-    return formatted_data
+    return pd.concat(dfs)
 
 
 def _group_columns(data):
