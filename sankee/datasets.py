@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 from sankee import utils
 
-
 class Dataset:
     def __init__(self, collection_name, band, labels, palette):
         """
@@ -113,6 +112,22 @@ class Dataset:
                 f"The following values are present in the data and undefined in the labels and palette: {np.unique(missing_keys)}"
             )
 
+    def get_year(self, year):
+        """Get one year's image from the dataset. This should work for any dataset that contains one image per year."""
+        img = self.collection.filterDate(str(year), str(year + 1)).first()
+        return img.select(self.band)
+
+
+class LCMS_Dataset(Dataset):
+    def get_year(self, year):
+        """Get one year's image from the dataset. LCMS splits up each year into two images: CONUS and
+        SEAK. This merges those into a single image."""
+        collection = self.collection.filter(ee.Filter.eq("year", year))
+        merged = collection.mosaic().select(self.band)
+        props = collection.first().propertyNames().remove("study_area")
+        merged = ee.Element.copyProperties(merged, collection.first(), props)
+        return ee.Image(merged)
+
 
 def convert_NLCD1992_to_2016(img):
     """
@@ -157,7 +172,7 @@ def convert_NLCD1992_to_2016(img):
 
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
-LCMS_LU = Dataset(
+LCMS_LU = LCMS_Dataset(
     collection_name="USFS/GTAC/LCMS/v2021-7",
     band="Land_Use",
     labels = {
@@ -181,7 +196,7 @@ LCMS_LU = Dataset(
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
-LCMS_LC = Dataset(
+LCMS_LC = LCMS_Dataset(
     collection_name="USFS/GTAC/LCMS/v2021-7",
     band="Land_Cover",
     labels = {
