@@ -1,8 +1,6 @@
 from enum import Enum
 import ee
 import pandas as pd
-import numpy as np
-from sankee import utils
 from sankee.core import sankify
 
 
