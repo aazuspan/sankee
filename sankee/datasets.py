@@ -3,9 +3,11 @@ import ee
 import pandas as pd
 from sankee.core import sankify
 
+from typing import Dict, List, Union
+
 
 class Dataset:
-    def __init__(self, name, id, band, labels, palette, years, nodata=None):
+    def __init__(self, name: str, id: str, band: str, labels: Dict[int, str], palette: Dict[int, str], years: List[int], nodata: Union[None, int]=None):
         """
         Parameters
         ----------
@@ -35,66 +37,28 @@ class Dataset:
         if sorted(labels.keys()) != sorted(palette.keys()):
             raise ValueError("Labels and palette must have the same keys.")
 
+    def __repr__(self) -> str:
+        return f"<Dataset: {self.name}>"
+
     @property
-    def keys(self):
+    def keys(self) -> List[int]:
         """Return the label keys of the dataset.
         """
         return list(self.labels.keys())
 
     @property
-    def df(self):
+    def df(self) -> pd.DataFrame:
         """Return a Pandas dataframe describing the dataset parameters.
         """
         return pd.DataFrame({"id": self.keys, "label": self.labels.values(), "color": self.palette.values()})
 
     @property
-    def collection(self):
+    def collection(self) -> ee.ImageCollection:
         """The :code:`ee.ImageCollection` representing the dataset.
         """
         return ee.ImageCollection(self.id)
 
-    def get_color(self, label):
-        """Take a label and return the associated color from the dataset's palette.
-
-        Parameters
-        ----------
-        label : str
-            The label of a class in the dataset.
-
-        Returns
-        -------
-        str
-            The color associated with the label.
-        """
-        label_key = [k for k, v in self.labels.items() if v == label][0]
-        return self.palette[label_key]
-
-    def get_images(self, max_images=20):
-        """
-        List the names of the first n images in the dataset collection up to :code:`max_images`.
-
-        Parameters
-        ----------
-        max_images : int, default 20
-            The number of images to return.
-
-        Returns
-        -------
-        List[str]
-            A list of :code:`system:id` values for the first n images.
-        """
-        img_list = []
-        for img in self.collection.toList(max_images).getInfo():
-            try:
-                img_list.append(img["id"])
-            except KeyError:
-                pass
-
-        if len(img_list) == max_images:
-            img_list.append("...")
-        return img_list
-
-    def get_year(self, year):
+    def get_year(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. This should work for any dataset that contains one image per year."""
         if year not in self.years:
             raise ValueError(f"This dataset does not include year `{year}`. Choose from {self.years}.")
@@ -102,11 +66,43 @@ class Dataset:
         img = self.collection.filterDate(str(year), str(year + 1)).first()
         return img.select(self.band)
 
-    def list_years(self):
+    def list_years(self) -> ee.List:
         """Get an ee.List of all years in the collection."""
         return self.collection.aggregate_array("system:time_start").map(lambda ms: ee.Date(ms).get("year")).distinct()
 
-    def sankify(self, years, region, exclude=None, max_classes=None, n=100, title=None, scale=None, seed=0):
+    def sankify(self, years: List[int], region: ee.Geometry, exclude: Union[List[int], None]=None, max_classes: Union[None, int]=None, n: int=500, title: Union[str, None]=None, scale: Union[int, None]=None, seed: int=0) -> "plotly.graph_objects.Figure":
+        """
+        Generate an interactive Sankey plot showing land cover change over time from a series of years in the dataset.
+
+        Parameters
+        ----------
+        years : List[int]
+            The years to include in the plot. If images are not available for a requested year, an error will be thrown.
+        region : ee.Geometry 
+            A region to generate samples within. The region must overlap all images.
+        exclude : list[int], default None
+            An optional list of pixel values to exclude from the plot. Excluded values must be raw pixel values rather than class 
+            labels. This can be helpful if the region is dominated by one or more unchanging classes and the goal is to visualize 
+            changes in smaller classes. No-data classes are always excluded automatically.
+        max_classes : int, default None 
+            If a value is provided, small classes will be removed until max_classes remain. Class size is calculated based on total 
+            times sampled in the time series.
+        n : int, default 500
+            The number of sample points to randomly generate for characterizing all images. More samples will provide more 
+            representative data but will take longer to process.
+        title : str, default None
+            An optional title that will be displayed above the Sankey plot.
+        scale : int, default None 
+            The scale in image units to perform sampling at. If none is provided, GEE will attempt to use the image's nominal scale, 
+            which may cause errors depending on the image projection.
+        seed : int, default 0
+            The seed value used to generate repeatable results during random sampling.
+
+        Returns
+        -------
+        plotly.graph_objs._figure.Figure
+            An interactive Sankey plot.
+        """
         imgs = [self.get_year(year) for year in years]
         exclude = exclude if exclude is not None else []
         exclude = exclude + [self.nodata] if self.nodata is not None else exclude
@@ -114,9 +110,12 @@ class Dataset:
 
 
 class LCMS_Dataset(Dataset):
-    def get_year(self, year):
+    def get_year(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. LCMS splits up each year into two images: CONUS and
         SEAK. This merges those into a single image."""
+        if year not in self.years:
+            raise ValueError(f"This dataset does not include year `{year}`. Choose from {self.years}.")
+
         collection = self.collection.filter(ee.Filter.eq("year", year))
         merged = collection.mosaic().select(self.band).clip(collection.geometry())
         
@@ -127,7 +126,7 @@ class LCMS_Dataset(Dataset):
         return merged
 
 class MODIS_Dataset(Dataset):
-    def get_year(self, year):
+    def get_year(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. Explicitly set the class value and palette 
         metadata to allow automatic visualization."""
         img = super().get_year(year)
@@ -139,48 +138,6 @@ class MODIS_Dataset(Dataset):
         img = img.set("LC_Type3_class_palette", [c.replace("#", "") for c in MODIS_LC_TYPE3.palette.values()])
 
         return img.select(self.band)
-
-
-def convert_NLCD1992_to_2016(img):
-    """
-    Reclassify NLCD 1992 data to match the NLCD 2016 legend. Direct comparisons between NLCD 1992 and later years
-    should still be done with caution due to differences in the classification method, but make classes roughly
-    comparable.
-
-    Parameters
-    ----------
-    img : ee.Image
-        An NLCD 1992 Land Cover image.
-
-    Returns
-    -------
-    ee.Image
-        The input images with values cross-walked to the NLCD 2016 key.
-
-    References
-    ----------
-    See USGS Open-File Report 2008-1379 for a detailed discussion and for the crosswalk table used.
-    https://pubs.usgs.gov/of/2008/1379/pdf/ofr2008-1379.pdf
-    """
-    img = img.select("landcover")
-
-    img = (img
-        .where(img.eq(85), 21)
-        .where(img.eq(21), 22)
-        .where(img.eq(22), 23)
-        .where(img.eq(23), 24)
-        .where(img.eq(32), 31)
-        .where(img.eq(33), 31)
-        .where(img.eq(42), 42)
-        .where(img.eq(51), 52)
-        .where(img.eq(61), 82)
-        .where(img.eq(83), 82)
-        .where(img.eq(84), 82)
-        .where(img.eq(91), 90)
-        .where(img.eq(92), 95)
-    )
-
-    return img
 
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
@@ -308,8 +265,6 @@ NLCD = Dataset(
     nodata=1
 )
 
-# Kept for backwards compatibility
-NLCD2016 = NLCD
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
 MODIS_LC_TYPE1 = MODIS_Dataset(
@@ -494,7 +449,7 @@ CGLS_LC100 = Dataset(
     nodata=0
 )
 
-_all = [
+datasets = [
     LCMS_LC,
     LCMS_LU,
     NLCD,
@@ -503,6 +458,3 @@ _all = [
     MODIS_LC_TYPE3,
     CGLS_LC100,
 ]
-
-# For backwards compatibility
-names = lambda : [d.id for d in _all]

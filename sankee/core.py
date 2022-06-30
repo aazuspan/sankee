@@ -2,7 +2,7 @@ import ee
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
-from typing import List
+from typing import Dict, List, Union, Any
 
 from sankee import utils
 
@@ -11,23 +11,22 @@ LABEL_PROPERTY = "sankee_label"
 
 
 def sankify(
-    image_list,
-    region,
-    band,
-    labels,
-    palette,
-    label_list=None,
-    exclude=None,
-    max_classes=None,
-    n=100,
-    title=None,
-    scale=None,
-    seed=0,
-    dataset=None,
-):
+    image_list: List[ee.Image],
+    region: ee.Geometry,
+    band: str,
+    labels: Dict[int, str],
+    palette: Dict[int, str],
+    label_list: Union[None, List[str]]=None,
+    exclude: Union[None, List[int]]=None,
+    max_classes: Union[None, int]=None,
+    n: int=500,
+    title: Union[None, str]=None,
+    scale: Union[None, int]=None,
+    seed: int=0,
+    dataset: Any=None,
+) -> go.Figure:
     """
-    Perform sampling, data cleaning and reformatting, and generation of a Sankey plot of land cover change over a time
-    series of images within a region.
+    Generate an interactive Sankey plot showing land cover change over time from a series of images.
 
     Parameters
     ----------
@@ -35,7 +34,7 @@ def sankify(
         An ordered list of images representing a time series of classified data. Each image will be sampled to generate 
         the Sankey plot. Any length of list is allowed, but lists with more than 3 or 4 images may produce unusable plots.
     region : ee.Geometry 
-        A region to generate samples within.
+        A region to generate samples within. The region must overlap all images.
     band : str
         The name of the band in all images of image_list that contains classified data.
     labels : dict
@@ -55,7 +54,7 @@ def sankify(
     max_classes : int, default None 
         If a value is provided, small classes will be removed until max_classes remain. Class size is calculated based on total 
         times sampled in the time series.
-    n : int, default 100
+    n : int, default 500
         The number of sample points to randomly generate for characterizing all images. More samples will provide more 
         representative data but will take longer to process.
     title : str, default None
@@ -75,7 +74,7 @@ def sankify(
         An interactive Sankey plot.
     """
     if dataset is not None:
-        raise ValueError("sankee.sankify no longer supports a `dataset` parameter. Instead use `Dataset.sankify`.")
+        raise ValueError("`sankee.sankify` no longer supports a `dataset` parameter. Use `Dataset.sankify` instead.")
 
     label_list = label_list if label_list is not None else list(range(len(image_list)))
     label_list = [str(l) for l in label_list]
@@ -91,10 +90,9 @@ def sankify(
     return _generate_sankey_plot(cleaned_data, labels, palette, title)
 
 
-def _label_images(image_list, label_list):
+def _label_images(image_list: List[ee.Image], label_list: List[str]) -> List[ee.Image]:
     """
-    Take a list of images and assign provided labels to each. Return the labeled images as a list
-    of images.
+    Set a label property for each image in a list using the corresponding label list.
     """
     labeled = []
     for img, label in zip(image_list, label_list):
@@ -103,22 +101,35 @@ def _label_images(image_list, label_list):
     return labeled
 
 
-def _collect_sample_data(image_list, region, band, label_list, n=100, scale=None, seed=0):
+def _collect_sample_data(image_list: List[ee.Image], region: ee.Geometry, band: str, label_list: List[str], n: int=500, scale: Union[None, int]=None, seed: int=0) -> pd.DataFrame:
     """
     Randomly sample values of a list of images to quantify change over time.
 
-    :param List[ee.Image] image_list: Labeled, classified ee.Images representing change over time.
-    :param ee.Geometry region: The region to sample.
-    :param str band: The name of the band of start_img and end_img that contains the class value.
-    :param list label_list: A list of labels associated with each image in image_list. If not provided, numeric labels
-    will be automatically generated starting at 0.
-    :param int n: The number of sample points to extract. More points will take longer to run but generate more
-    representative cover statistics.
-    :param int scale: The scale to sample point statistics at. Generally, this should be the nominal scale of the
-    start and end image.
-    :param int seed: Random seed used to generate sample points.
-    :return pd.DataFrame: A dataframe in which each row represents as single sample point and columns represent the
-    class of that point in each image of the image list.
+    Parameters
+    ----------
+    image_list : List[ee.Image]
+        Labeled, classified images representing change over time.
+    region : ee.Geometry
+        A region to sample within.
+    band : str
+        The name of the band in all images of image_list that contains classified data.
+    label_list : List[str]
+        A list of labels associated with each image in the image_list. If none is provided, sequential numeric labels will be
+        automatically assigned starting at 0.
+    n : int, default 500
+        The number of sample points to randomly generate for characterizing all images. More samples will provide more
+        representative data but will take longer to process.
+    scale : int, default None
+        The scale in image units to perform sampling at. If none is provided, GEE will attempt to use the image's nominal scale,
+        which may cause errors depending on the image projection.
+    seed : int, default 0
+        The random seed used to generate sample points, for repeatability.
+    
+    Returns
+    -------
+    pd.DataFrame
+        A dataframe in which each row represents a single sample point and columns represent the
+        class of that point in each image of the image list.
     """
     samples = ee.FeatureCollection.randomPoints(region, n, seed)
 
@@ -141,9 +152,9 @@ def _collect_sample_data(image_list, region, band, label_list, n=100, scale=None
     return data[label_list]
 
 
-def _check_for_missing_samples(data, label_list):
+def _check_for_missing_samples(data: pd.DataFrame, label_list: List[str]) -> None:
     """
-    Check that the sampled data has a column for each label in the label list. If not, it may be that sampling occured
+    Check that the sampled data has a column for each label in the label list. If not, it may be that sampling occurred
     outside of the image bounds.
     """
     missing_labels = [label for label in label_list if label not in data.columns]
@@ -168,7 +179,7 @@ def _extract_values_from_images_at_points(image_list: List[ee.Image], sample_poi
     return sample_points.map(extract_values_at_point)
 
 
-def _clean_data(data, exclude=None, max_classes=None):
+def _clean_data(data: pd.DataFrame, exclude: List[int]=None, max_classes: Union[None, int]=None) -> pd.DataFrame:
     """
     Perform some cleaning on data before plotting by excluding unwanted classes and limiting the number of classes.
 
@@ -189,7 +200,7 @@ def _clean_data(data, exclude=None, max_classes=None):
     return data
 
 
-def check_data_is_compatible(labels, data):
+def check_data_is_compatible(labels: Dict[int, str], data: pd.DataFrame) -> None:
     """
     Check for values that are present in data and are not present in labels and raise an error if any are
     found.
@@ -205,14 +216,14 @@ def check_data_is_compatible(labels, data):
         )
 
 
-def _generate_sankey_plot(data, labels, palette, title):
+def _generate_sankey_plot(data: pd.DataFrame, labels: Dict[int, str], palette: Dict[int, str], title: str) -> go.Figure:
     node_labels, link_labels, node_palette, link_palette, label, source, target, value = _format_for_sankey(
         data, labels, palette
     )
     return _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=title)
 
 
-def _format_for_sankey(data, labels, palette):
+def _format_for_sankey(data: pd.DataFrame, labels: Dict[int, str], palette: Dict[int, str]):
     """
     Take a dataframe of data representing classified sample points and return all parameters needed to generate a
     Sankey plot. This is done by looping through columns in groups of two representing start and end conditions and
@@ -246,7 +257,7 @@ def _format_for_sankey(data, labels, palette):
     return (node_labels, link_labels, node_palette, link_palette, label, source, target, value)
 
 
-def _group_and_format_data(data, labels):
+def _group_and_format_data(data: pd.DataFrame, labels: List[str]) -> pd.DataFrame:
     """
     Take raw data, group it into groups of two, and generate a formatted dataframe.
     """
@@ -263,7 +274,7 @@ def _group_and_format_data(data, labels):
     return pd.concat(dfs)
 
 
-def _group_columns(data):
+def _group_columns(data: pd.DataFrame) -> pd.DataFrame:
     """
     Yield all groups of two adjacent columns from a dataframe.
     """
@@ -272,7 +283,7 @@ def _group_columns(data):
         yield data.iloc[:, group_indexes]
 
 
-def _reformat_group(raw_data, group_data, labels, start_index=0):
+def _reformat_group(raw_data: pd.DataFrame, group_data: pd.DataFrame, labels: List[str], start_index: int=0) -> pd.DataFrame:
     column_list = group_data.columns.tolist()
 
     # Transform the data to get counts of each combination of condition
@@ -296,7 +307,7 @@ def _reformat_group(raw_data, group_data, labels, start_index=0):
     ]
 
 
-def _assign_unique_indexes(raw_data, sankey_data, start_index):
+def _assign_unique_indexes(raw_data: pd.DataFrame, sankey_data: pd.DataFrame, start_index: int) -> pd.DataFrame:
     column_list = sankey_data.columns.tolist()
 
     # Get lists of unique source and target classes
@@ -313,7 +324,7 @@ def _assign_unique_indexes(raw_data, sankey_data, start_index):
     return sankey_data
 
 
-def _build_node_labels(data):
+def _build_node_labels(data: pd.DataFrame) -> List[str]:
     """
     Build a list of period labels for nodes, corresponding to the link indexes.
     """
@@ -323,21 +334,19 @@ def _build_node_labels(data):
     return combined.groupby("label").period.first().tolist()
 
 
-def _build_link_labels(data):
-    return [_build_link_label(row.source_label, row.target_label, row.change) for _, row in data.iterrows()]
-
-
-def _build_link_label(start_class, end_class, change):
+def _build_link_labels(data: pd.DataFrame) -> List[str]:
     """
-    Build a string describing the change from one state to another in a row of data.
+    Build strings describing the change in states for each row of the dataframe.
     """
-    verb = "remained" if start_class == end_class else "became"
-    link_label = f"{round(change * 100)}% of {start_class} {verb} {end_class}"
+    link_labels = []
+    for _, row in data.iterrows():
+        verb = "remained" if row.source_label == row.target_label else "became"
+        link_label = f"{round(row.change * 100)}% of {row.source_label} {verb} {row.target_label}"
+        link_labels.append(link_label)
+    return link_labels
 
-    return link_label
 
-
-def _build_labels(data):
+def _build_labels(data: pd.DataFrame) -> List[str]:
     max_id = data.target.max()
     # Build empty placeholder labels for each class
     label = [None for i in range(max_id + 1)]
@@ -350,7 +359,7 @@ def _build_labels(data):
     return label
 
 
-def _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=None):
+def _plot(node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=None) -> go.Figure:
     """
     Generate a Sankey plot of land cover change over an arbitrary number of time steps.
     """

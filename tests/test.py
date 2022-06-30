@@ -160,8 +160,9 @@ class TestSankee(unittest.TestCase):
         """
         If a band name is passed to _collect_sample_data and it's not in the image, a ValueError should be raised.
         """
+        labeled = sankee.core._label_images(TEST_IMG_LIST, TEST_LABEL_LIST)
         with self.assertRaises(ValueError):
-            sankee.core._collect_sample_data(ee.ImageCollection(TEST_IMG_LIST), region=TEST_REGION, band="bad_band", label_list=TEST_LABEL_LIST)
+            sankee.core._collect_sample_data(labeled, region=TEST_REGION, band="bad_band", label_list=TEST_LABEL_LIST)
 
     def test_format_for_sankey_with_two_periods(self):
         """
@@ -313,11 +314,11 @@ class TestSankee(unittest.TestCase):
         Test that descriptive link labels are built correctly whether classes
         changed or remained the same.
         """
-        link_label_changed = sankee.core._build_link_label("start", "end", 0.8)
-        self.assertEqual(link_label_changed, "80% of start became end")
+        change_df = pd.DataFrame({"source_label": ["a", "a"], "target_label": ["b", "a"], "change": [0.8, 0.2]})
+        link_labels = sankee.core._build_link_labels(change_df)
 
-        link_label_remained = sankee.core._build_link_label("start", "start", 0.8)
-        self.assertEqual(link_label_remained, "80% of start remained start")
+        self.assertEqual(link_labels[0], "80% of a became b")
+        self.assertEqual(link_labels[1], "20% of a remained a")
 
     def test_build_node_labels(self):
         """

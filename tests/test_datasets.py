@@ -43,5 +43,5 @@ class TestDatasets(unittest.TestCase):
             self.assertListEqual(img.bandNames().getInfo(), [dataset.band])
 
     def test_years(self):
-        for dataset in sankee.datasets._all:
+        for dataset in sankee.datasets.datasets:
             self.assertListEqual(dataset.years, dataset.list_years().getInfo())
