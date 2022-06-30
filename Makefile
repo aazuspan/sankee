@@ -36,3 +36,12 @@ install: ## Install the package
 release: ## Package and upload
 	python setup.py sdist
 	twine upload dist/*
+
+install-hooks: ## Install pre-commit hooks
+	pre-commit install
+
+run-hooks: ## Run pre-commit hooks on staged files
+	pre-commit run
+
+run-hooks-all: ## Run pre-commit hooks on all files
+	pre-commit run --all-files
