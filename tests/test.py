@@ -206,7 +206,7 @@ class TestSankee(unittest.TestCase):
         """
         test_band = "test"
         test_labels = {0: "first label", 1: "second label"}
-        test_palette = {0: "first color", 2: "second color"}
+        test_palette = {0: "first color", 1: "second color"}
         dataset = sankee.core._build_dataset(
             dataset=TEST_DATASET, band=test_band, labels=test_labels, palette=test_palette
         )
