@@ -141,6 +141,20 @@ class LCMS_Dataset(Dataset):
         merged = merged.setDefaultProjection("EPSG:5070")
         return merged
 
+class MODIS_Dataset(Dataset):
+    def get_year(self, year):
+        """Get one year's image from the dataset. Explicitly set the class value and palette 
+        metadata to allow automatic visualization."""
+        img = super().get_year(year)
+        img = img.set("LC_Type1_class_values", list(MODIS_LC_TYPE1.labels.keys()))
+        img = img.set("LC_Type1_class_palette", [c.replace("#", "") for c in MODIS_LC_TYPE1.palette.values()])
+        img = img.set("LC_Type2_class_values", list(MODIS_LC_TYPE2.labels.keys()))
+        img = img.set("LC_Type2_class_palette", [c.replace("#", "") for c in MODIS_LC_TYPE2.palette.values()])
+        img = img.set("LC_Type3_class_values", list(MODIS_LC_TYPE3.labels.keys()))
+        img = img.set("LC_Type3_class_palette", [c.replace("#", "") for c in MODIS_LC_TYPE3.palette.values()])
+
+        return img.select(self.band)
+
 
 def convert_NLCD1992_to_2016(img):
     """
@@ -310,7 +324,7 @@ NLCD = Dataset(
 NLCD2016 = NLCD
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
-MODIS_LC_TYPE1 = Dataset(
+MODIS_LC_TYPE1 = MODIS_Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 1",
     id="MODIS/006/MCD12Q1",
     band="LC_Type1",
@@ -356,7 +370,7 @@ MODIS_LC_TYPE1 = Dataset(
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
-MODIS_LC_TYPE2 = Dataset(
+MODIS_LC_TYPE2 = MODIS_Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 2",
     id="MODIS/006/MCD12Q1",
     band="LC_Type2",
@@ -400,7 +414,7 @@ MODIS_LC_TYPE2 = Dataset(
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
-MODIS_LC_TYPE3 = Dataset(
+MODIS_LC_TYPE3 = MODIS_Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 3",
     id="MODIS/006/MCD12Q1",
     band="LC_Type3",
