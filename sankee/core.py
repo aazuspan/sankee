@@ -2,6 +2,7 @@ import ee
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
+from typing import List
 
 from sankee import utils
 
@@ -92,21 +93,21 @@ def sankify(
 
 def _label_images(image_list, label_list):
     """
-    Take a list of images and assign provided labels to each. Return the labeled images as an
-    ImageCollection.
+    Take a list of images and assign provided labels to each. Return the labeled images as a list
+    of images.
     """
     labeled = []
     for img, label in zip(image_list, label_list):
         labeled.append(img.set(LABEL_PROPERTY, label))
     
-    return ee.ImageCollection(labeled)
+    return labeled
 
 
 def _collect_sample_data(image_list, region, band, label_list, n=100, scale=None, seed=0):
     """
     Randomly sample values of a list of images to quantify change over time.
 
-    :param ee.ImageCollection image_list: A collection of labeled, classified ee.Images representing change over time.
+    :param List[ee.Image] image_list: Labeled, classified ee.Images representing change over time.
     :param ee.Geometry region: The region to sample.
     :param str band: The name of the band of start_img and end_img that contains the class value.
     :param list label_list: A list of labels associated with each image in image_list. If not provided, numeric labels
@@ -151,28 +152,20 @@ def _check_for_missing_samples(data, label_list):
         " region overlaps the image bounds.")
 
 
-def _extract_values_from_images_at_points(image_list, sample_points, band, scale):
+def _extract_values_from_images_at_points(image_list: List[ee.Image], sample_points: ee.FeatureCollection, band: str, scale: int) -> ee.FeatureCollection:
     """
-    Take a collection of images and a collection of sample points and extract image values to each sample point. The image
+    Take a list of images and a collection of sample points and extract image values to each sample point. The image
     values will be stored in a property based on the image label.
     """
-
-    def extract_values_from_images_at_one_point(point):
-        point_location = ee.Element.geometry(point)
-
-        def extract_value_from_image_at_one_point(img, feature):
-            cover = ee.Image(img).reduceRegion(ee.Reducer.first(), point_location, scale).get(band)
-            # Get the user-defined label that was stored in the image
-            label = ee.Image(img).get(LABEL_PROPERTY)
-
-            # Set a property where the name is the label and the value is the extracted cover
-            return ee.Feature(feature).set(label, cover)
-
-        return ee.Feature(image_list.iterate(extract_value_from_image_at_one_point, point))
-
-    sample_data = sample_points.map(extract_values_from_images_at_one_point)
-
-    return sample_data
+    def extract_values_at_point(pt):
+        for img in image_list:
+            cover = img.reduceRegion(reducer=ee.Reducer.first(), geometry=pt.geometry(), scale=scale).get(band)
+            label = img.get(LABEL_PROPERTY)
+            pt = ee.Feature(pt).set(label, cover)
+        
+        return pt
+    
+    return sample_points.map(extract_values_at_point)
 
 
 def _clean_data(data, exclude=None, max_classes=None):
