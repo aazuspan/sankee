@@ -24,6 +24,9 @@ class Dataset:
         self.labels = labels
         self.palette = palette
 
+        if sorted(labels.keys()) != sorted(palette.keys()):
+            raise ValueError("Labels and palette must have the same keys.")
+
     @property
     def keys(self):
         """Return the label keys of the dataset.
@@ -100,56 +103,64 @@ class Dataset:
         Check for values that are present in data and are not present in labels or palette and raise an error if any are
         found.
         """
-        missing_labels = []
-        missing_palette = []
+        missing_keys = []
 
         for _, col in data.iteritems():
-            missing_labels += utils.get_missing_keys(col, self.labels)
-            missing_palette += utils.get_missing_keys(col, self.palette)
+            missing_keys += utils.get_missing_keys(col, self.labels)
 
-        if missing_labels:
+        if missing_keys:
             raise Exception(
-                f"The following values are present in the data and undefined in the labels: {np.unique(missing_labels)}"
-            )
-        if missing_palette:
-            raise Exception(
-                f"The following values are present in the data and undefined in the palette: {np.unique(missing_palette)}"
+                f"The following values are present in the data and undefined in the labels and palette: {np.unique(missing_keys)}"
             )
 
-        return 0
 
-
-class datasets(Dataset, Enum):
-    """Premade dataset objects with attributes for plotting classified Image Collections.
-    
-    Attributes
-    ----------
-    LCMS_LU
-        USFS Landscape Change Monitoring System Land Use.
-        https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
-    LCMS_LC
-        USFS Landscape Change Monitoring System Land Cover.
-        https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
-    NLCD_2016
-        National Land Cover Database 2016.
-        https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2016_REL
-    MODIS_LC_TYPE1
-        MODIS Land Cover Type 1: Annual International Geosphere-Biosphere Programme (IGBP) classification.
-        https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
-    MODIS_LC_TYPE2
-        MODIS Land Cover Type 2: Annual University of Maryland (UMD) classification
-        https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
-    MODIS_LC_TYPE3
-        MODIS Land Cover Type 3: Annual Leaf Area Index (LAI) classification
-        https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
-    CGLS_LC100
-        Copernicus Global Land Cover
-        https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_Landcover_100m_Proba-V-C3_Global
+def convert_NLCD1992_to_2016(img):
     """
-    LCMS_LU = (
-        "USFS/GTAC/LCMS/v2020-5",
-        "Land_Use",
-        {
+    Reclassify NLCD 1992 data to match the NLCD 2016 legend. Direct comparisons between NLCD 1992 and later years
+    should still be done with caution due to differences in the classification method, but make classes roughly
+    comparable.
+
+    Parameters
+    ----------
+    img : ee.Image
+        An NLCD 1992 Land Cover image.
+
+    Returns
+    -------
+    ee.Image
+        The input images with values cross-walked to the NLCD 2016 key.
+
+    References
+    ----------
+    See USGS Open-File Report 2008-1379 for a detailed discussion and for the crosswalk table used.
+    https://pubs.usgs.gov/of/2008/1379/pdf/ofr2008-1379.pdf
+    """
+    img = img.select("landcover")
+
+    img = (img
+        .where(img.eq(85), 21)
+        .where(img.eq(21), 22)
+        .where(img.eq(22), 23)
+        .where(img.eq(23), 24)
+        .where(img.eq(32), 31)
+        .where(img.eq(33), 31)
+        .where(img.eq(42), 42)
+        .where(img.eq(51), 52)
+        .where(img.eq(61), 82)
+        .where(img.eq(83), 82)
+        .where(img.eq(84), 82)
+        .where(img.eq(91), 90)
+        .where(img.eq(92), 95)
+    )
+
+    return img
+
+
+# https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
+LCMS_LU = Dataset(
+    collection_name="USFS/GTAC/LCMS/v2021-7",
+    band="Land_Use",
+    labels = {
             1: "Agriculture",
             2: "Developed",
             3: "Forest",
@@ -158,7 +169,7 @@ class datasets(Dataset, Enum):
             6: "Rangeland or Pasture",
             7: "No Data"
         },
-        {
+    palette = {
             1: "#efff6b",
             2: "#ff2ff8", 
             3: "#1b9d0c",
@@ -167,12 +178,13 @@ class datasets(Dataset, Enum):
             6: "#c2b34a",
             7: "#1B1716",
         }
-    )
-    
-    LCMS_LC = (
-        "USFS/GTAC/LCMS/v2020-5",
-        "Land_Cover",
-        {
+)
+
+# https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
+LCMS_LC = Dataset(
+    collection_name="USFS/GTAC/LCMS/v2021-7",
+    band="Land_Cover",
+    labels = {
             1: "Trees",
             2: "Tall Shrubs & Trees Mix",
             3: "Shrubs & Trees Mix",
@@ -189,7 +201,7 @@ class datasets(Dataset, Enum):
             14: "Water",
             15: "No Data"
         },
-        {
+    palette = {
             1: "#005e00", 
             2: "#008000", 
             3: "#00cc00", 
@@ -205,14 +217,14 @@ class datasets(Dataset, Enum):
             13: "#ffffff", 
             14: "#4780f3", 
             15: "#1B1716", 
-        },
+        }
+)
 
-    )
-
-    NLCD2016 = (
-        "USGS/NLCD",
-        "landcover",
-        {
+# https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2019_REL_NLCD
+NLCD = Dataset(
+    collection_name="USGS/NLCD_RELEASES/2019_REL/NLCD",
+    band="landcover",
+    labels = {
             1: "No data",
             11: "Open water",
             12: "Perennial ice/snow",
@@ -234,8 +246,8 @@ class datasets(Dataset, Enum):
             82: "Cultivated crops",
             90: "Woody wetlands",
             95: "Emergent herbaceous wetlands",
-        },
-        {
+    },
+    palette = {
             1: "#000000",
             11: "#466b9f",
             12: "#d1def8",
@@ -257,248 +269,195 @@ class datasets(Dataset, Enum):
             82: "#ab6c28",
             90: "#b8d9eb",
             95: "#6c9fb8",
-        },
-    )
+    }
+)
 
-    MODIS_LC_TYPE1 = (
-        "MODIS/006/MCD12Q1",
-        "LC_Type1",
-        {
-            1: "Evergreen conifer forest",
-            2: "Evergreen broadleaf forest",
-            3: "Deciduous conifer forest",
-            4: "Deciduous broadleaf forest",
-            5: "Mixed forest",
-            6: "Closed shrubland",
-            7: "Open shrubland",
-            8: "Woody savanna",
-            9: "Savanna",
-            10: "Grassland",
-            11: "Permanent wetland",
-            12: "Cropland",
-            13: "Urban",
-            14: "Cropland and natural vegetation",
-            15: "Permanent snow and ice",
-            16: "Barren",
-            17: "Water",
-        },
-        {
-            1: "#086a10",
-            2: "#dcd159",
-            3: "#54a708",
-            4: "#78d203",
-            5: "#009900",
-            6: "#c6b044",
-            7: "#dcd159",
-            8: "#dade48",
-            9: "#fbff13",
-            10: "#b6ff05",
-            11: "#27ff87",
-            12: "#c24f44",
-            13: "#a5a5a5",
-            14: "#ff6d4c",
-            15: "#69fff8",
-            16: "#f9ffa4",
-            17: "#1c0dff",
-        },
-    )
+# TODO: Deprecate this somehow
+NLCD2016 = NLCD
 
-    MODIS_LC_TYPE2 = (
-        "MODIS/006/MCD12Q1",
-        "LC_Type2",
-        {
-            0: "Water",
-            1: "Evergreen conifer forest",
-            2: "Evergreen broadleaf forest",
-            3: "Deciduous conifer forest",
-            4: "Deciduous broadleaf forest",
-            5: "Mixed forest",
-            6: "Closed shrubland",
-            7: "Open shrubland",
-            8: "Woody savanna",
-            9: "Savanna",
-            10: "Grassland",
-            11: "Permanent wetland",
-            12: "Cropland",
-            13: "Urban",
-            14: "Cropland and natural vegetation",
-            15: "Barren",
-        },
-        {
-            0: "#1c0dff",
-            1: "#05450a",
-            2: "#086a10",
-            3: "#54a708",
-            4: "#78d203",
-            5: "#009900",
-            6: "#c6b044",
-            7: "#dcd159",
-            8: "#dade48",
-            9: "#fbff13",
-            10: "#b6ff05",
-            11: "#27ff87",
-            12: "#c24f44",
-            13: "#a5a5a5",
-            14: "#ff6d4c",
-            15: "#f9ffa4",
-        },
-    )
+# https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
+MODIS_LC_TYPE1 = Dataset(
+    collection_name="MODIS/006/MCD12Q1",
+    band="LC_Type1",
+    labels = {
+        1: "Evergreen conifer forest",
+        2: "Evergreen broadleaf forest",
+        3: "Deciduous conifer forest",
+        4: "Deciduous broadleaf forest",
+        5: "Mixed forest",
+        6: "Closed shrubland",
+        7: "Open shrubland",
+        8: "Woody savanna",
+        9: "Savanna",
+        10: "Grassland",
+        11: "Permanent wetland",
+        12: "Cropland",
+        13: "Urban",
+        14: "Cropland and natural vegetation",
+        15: "Permanent snow and ice",
+        16: "Barren",
+        17: "Water",
+    },
+    palette = {
+        1: "#086a10",
+        2: "#dcd159",
+        3: "#54a708",
+        4: "#78d203",
+        5: "#009900",
+        6: "#c6b044",
+        7: "#dcd159",
+        8: "#dade48",
+        9: "#fbff13",
+        10: "#b6ff05",
+        11: "#27ff87",
+        12: "#c24f44",
+        13: "#a5a5a5",
+        14: "#ff6d4c",
+        15: "#69fff8",
+        16: "#f9ffa4",
+        17: "#1c0dff",
+    }
+)
 
-    MODIS_LC_TYPE3 = (
-        "MODIS/006/MCD12Q1",
-        "LC_Type3",
-        {
-            0: "Water",
-            1: "Grassland",
-            2: "Shrubland",
-            3: "Crops",
-            4: "Savannas",
-            5: "Evergreen broadleaf",
-            6: "Deciduous broadleaf",
-            7: "Evergreen conifer",
-            8: "Deciduous conifer",
-            9: "Barren",
-            10: "Urban",
-        },
-        {
-            0: "#1c0dff",
-            1: "#b6ff05",
-            2: "#dcd159",
-            3: "#c24f44",
-            4: "#fbff13",
-            5: "#086a10",
-            6: "#78d203",
-            7: "#05450a",
-            8: "#54a708",
-            9: "#f9ffa4",
-            10: "#a5a5a5",
-        },
-    )
+# https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
+MODIS_LC_TYPE2 = Dataset(
+    collection_name="MODIS/006/MCD12Q1",
+    band="LC_Type2",
+    labels = {
+        0: "Water",
+        1: "Evergreen conifer forest",
+        2: "Evergreen broadleaf forest",
+        3: "Deciduous conifer forest",
+        4: "Deciduous broadleaf forest",
+        5: "Mixed forest",
+        6: "Closed shrubland",
+        7: "Open shrubland",
+        8: "Woody savanna",
+        9: "Savanna",
+        10: "Grassland",
+        11: "Permanent wetland",
+        12: "Cropland",
+        13: "Urban",
+        14: "Cropland and natural vegetation",
+        15: "Barren",
+    },
+    palette = {
+        0: "#1c0dff",
+        1: "#05450a",
+        2: "#086a10",
+        3: "#54a708",
+        4: "#78d203",
+        5: "#009900",
+        6: "#c6b044",
+        7: "#dcd159",
+        8: "#dade48",
+        9: "#fbff13",
+        10: "#b6ff05",
+        11: "#27ff87",
+        12: "#c24f44",
+        13: "#a5a5a5",
+        14: "#ff6d4c",
+        15: "#f9ffa4",
+    }
+)
 
-    CGLS_LC100 = (
-        "COPERNICUS/Landcover/100m/Proba-V-C3/Global",
-        "discrete_classification",
-        {
-            0: "Unknown",
-            20: "Shrubs",
-            30: "Herbaceous vegetation",
-            40: "Cultivated",
-            50: "Urban",
-            60: "Bare",
-            70: "Snow and ice",
-            80: "Water body",
-            90: "Herbaceous wetland",
-            100: "Moss and lichen",
-            111: "Closed forest, evergreen conifer",
-            112: "Closed forest, evergreen broad leaf",
-            113: "Closed forest, deciduous conifer",
-            114: "Closed forest, deciduous broad leaf",
-            115: "Closd forest, mixed",
-            116: "Closed forest, other",
-            121: "Open forest, evergreen conifer",
-            122: "Open forest, evergreen broad leaf",
-            123: "Open forest, deciduous conifer",
-            124: "Open forest, deciduous broad leaf",
-            125: "Open forest, mixed",
-            126: "Open forest, other",
-            200: "Ocean",
-        },
-        {
-            0: "#282828",
-            20: "#FFBB22",
-            30: "#FFFF4C",
-            40: "#F096FF",
-            50: "#FA0000",
-            60: "#B4B4B4",
-            70: "#F0F0F0",
-            80: "#0032C8",
-            90: "#0096A0",
-            100: "#FAE6A0",
-            111: "#58481F",
-            112: "#009900",
-            113: "#70663E",
-            114: "#00CC00",
-            115: "#4E751F",
-            116: "#007800",
-            121: "#666000",
-            122: "#8DB400",
-            123: "#8D7400",
-            124: "#A0DC00",
-            125: "#929900",
-            126: "#648C00",
-            200: "#000080",
-        },
-    )
+# https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
+MODIS_LC_TYPE3 = Dataset(
+    collection_name="MODIS/006/MCD12Q1",
+    band="LC_Type3",
+    labels = {
+        0: "Water",
+        1: "Grassland",
+        2: "Shrubland",
+        3: "Crops",
+        4: "Savannas",
+        5: "Evergreen broadleaf",
+        6: "Deciduous broadleaf",
+        7: "Evergreen conifer",
+        8: "Deciduous conifer",
+        9: "Barren",
+        10: "Urban",
+    },
+    palette = {
+        0: "#1c0dff",
+        1: "#b6ff05",
+        2: "#dcd159",
+        3: "#c24f44",
+        4: "#fbff13",
+        5: "#086a10",
+        6: "#78d203",
+        7: "#05450a",
+        8: "#54a708",
+        9: "#f9ffa4",
+        10: "#a5a5a5",
+    }
+)
 
-    @classmethod
-    def names(cls):
-        """
-        Return string names of all datasets.
+# https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_Landcover_100m_Proba-V-C3_Global
+CGLS_LC100 = Dataset(
+    collection_name="COPERNICUS/Landcover/100m/Proba-V-C3/Global",
+    band="discrete_classification",
+    labels = {
+        0: "Unknown",
+        20: "Shrubs",
+        30: "Herbaceous vegetation",
+        40: "Cultivated",
+        50: "Urban",
+        60: "Bare",
+        70: "Snow and ice",
+        80: "Water body",
+        90: "Herbaceous wetland",
+        100: "Moss and lichen",
+        111: "Closed forest, evergreen conifer",
+        112: "Closed forest, evergreen broad leaf",
+        113: "Closed forest, deciduous conifer",
+        114: "Closed forest, deciduous broad leaf",
+        115: "Closd forest, mixed",
+        116: "Closed forest, other",
+        121: "Open forest, evergreen conifer",
+        122: "Open forest, evergreen broad leaf",
+        123: "Open forest, deciduous conifer",
+        124: "Open forest, deciduous broad leaf",
+        125: "Open forest, mixed",
+        126: "Open forest, other",
+        200: "Ocean",
+    },
+    palette = {
+        0: "#282828",
+        20: "#FFBB22",
+        30: "#FFFF4C",
+        40: "#F096FF",
+        50: "#FA0000",
+        60: "#B4B4B4",
+        70: "#F0F0F0",
+        80: "#0032C8",
+        90: "#0096A0",
+        100: "#FAE6A0",
+        111: "#58481F",
+        112: "#009900",
+        113: "#70663E",
+        114: "#00CC00",
+        115: "#4E751F",
+        116: "#007800",
+        121: "#666000",
+        122: "#8DB400",
+        123: "#8D7400",
+        124: "#A0DC00",
+        125: "#929900",
+        126: "#648C00",
+        200: "#000080",
+    }
+)
 
-        Returns
-        -------
-        List[str]
-            Names of all premade datasets.
-        """
-        return [e.name for e in cls]
+_all = [
+    LCMS_LC,
+    LCMS_LU,
+    NLCD,
+    MODIS_LC_TYPE1,
+    MODIS_LC_TYPE2,
+    MODIS_LC_TYPE3,
+    CGLS_LC100,
+]
 
-    @classmethod
-    def get(cls, i=None):
-        """
-        Return object at a given index i or return all if i is none.
-
-        Parameters
-        ----------
-        i : Optional[int]
-            If i is provided, return the dataset at index i.
-        
-        Returns
-        -------
-        List[sankee.datasets.Dataset]
-            A list of all :code:`Dataset` objects.
-        """
-        if i is not None:
-            return list(cls)[i]
-
-        return [e for e in cls]
-
-    def convert_NLCD1992_to_2016(img):
-        """
-        Reclassify NLCD 1992 data to match the NLCD 2016 legend. Direct comparisons between NLCD 1992 and later years
-        should still be done with caution due to differences in the classification method, but make classes roughly
-        comparable.
-
-        Parameters
-        ----------
-        img : ee.Image
-            An NLCD 1992 Land Cover image.
-
-        Returns
-        -------
-        ee.Image
-            The input images with values cross-walked to the NLCD 2016 key.
-
-        References
-        ----------
-        See USGS Open-File Report 2008-1379 for a detailed discussion and for the crosswalk table used.
-        https://pubs.usgs.gov/of/2008/1379/pdf/ofr2008-1379.pdf
-        """
-        img = img.select("landcover")
-
-        img = (img
-            .where(img.eq(85), 21)
-            .where(img.eq(21), 22)
-            .where(img.eq(22), 23)
-            .where(img.eq(23), 24)
-            .where(img.eq(32), 31)
-            .where(img.eq(33), 31)
-            .where(img.eq(42), 42)
-            .where(img.eq(51), 52)
-            .where(img.eq(61), 82)
-            .where(img.eq(83), 82)
-            .where(img.eq(84), 82)
-            .where(img.eq(91), 90)
-            .where(img.eq(92), 95)
-        )
-
-        return img
+# For backwards compatibility
+names = lambda : [d.collection_name for d in _all]
