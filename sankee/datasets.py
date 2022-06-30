@@ -3,10 +3,11 @@ import ee
 import pandas as pd
 import numpy as np
 from sankee import utils
-from sankee import sankify
+from sankee.core import sankify
+
 
 class Dataset:
-    def __init__(self, name, id, band, labels, palette, years):
+    def __init__(self, name, id, band, labels, palette, years, nodata=None):
         """
         Parameters
         ----------
@@ -22,6 +23,8 @@ class Dataset:
             A dictionary matching class values to their corresponding hex colors.
         years : List[int]
             All years available in this dataset.
+        nodata : int
+            An optional no-data values to automatically exclude when sankifying.
         """
         self.name = name
         self.id = id
@@ -29,6 +32,7 @@ class Dataset:
         self.labels = labels
         self.palette = palette
         self.years = years
+        self.nodata = nodata
 
         if sorted(labels.keys()) != sorted(palette.keys()):
             raise ValueError("Labels and palette must have the same keys.")
@@ -130,6 +134,8 @@ class Dataset:
 
     def sankify(self, years, region, exclude=None, max_classes=None, n=100, title=None, scale=None, seed=0, dropna=True):
         imgs = [self.get_year(year) for year in years]
+        exclude = exclude if exclude is not None else []
+        exclude = exclude + [self.nodata] if self.nodata is not None else exclude
         return sankify(image_list=imgs, region=region, label_list=years, dataset=self, exclude=exclude, max_classes=max_classes, n=n, title=title, scale=scale, seed=seed, dropna=dropna)
 
 
@@ -226,7 +232,8 @@ LCMS_LU = LCMS_Dataset(
             6: "#c2b34a",
             7: "#1B1716",
         },
-    years = list(range(1985, 2022))
+    years = list(range(1985, 2022)),
+    nodata=7
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
@@ -268,7 +275,8 @@ LCMS_LC = LCMS_Dataset(
             14: "#4780f3", 
             15: "#1B1716", 
         },
-    years = list(range(1985, 2022))
+    years = list(range(1985, 2022)),
+    nodata=15
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2019_REL_NLCD
@@ -322,7 +330,8 @@ NLCD = Dataset(
         90: "#b8d9eb",
         95: "#6c9fb8",
     },
-    years = [2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019]
+    years = [2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019],
+    nodata=1
 )
 
 # Kept for backwards compatibility
@@ -507,7 +516,8 @@ CGLS_LC100 = Dataset(
         126: "#648C00",
         200: "#000080",
     },
-    years = list(range(2015, 2020))
+    years = list(range(2015, 2020)),
+    nodata=0
 )
 
 _all = [
