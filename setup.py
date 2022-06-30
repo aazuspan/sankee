@@ -1,5 +1,6 @@
-from setuptools import setup, find_packages
 from os import path
+
+from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 
@@ -29,7 +30,14 @@ setup(
     keywords="sankey land cover visualization",
     packages=find_packages(include=["sankee", "sankee."]),
     python_requires=">=3.6",
-    install_requires=["earthengine-api>=0.1.230", "ipykernel", "nbformat>=4.2.0", "numpy", "pandas", "plotly>=5.2.2",],
+    install_requires=[
+        "earthengine-api>=0.1.230",
+        "ipykernel",
+        "nbformat>=4.2.0",
+        "numpy",
+        "pandas",
+        "plotly>=5.2.2",
+    ],
     project_urls={
         "Bug Reports": "https://github.com/aazuspan/sankee/issues",
         "Source": "https://github.com/aazuspan/sankee/",

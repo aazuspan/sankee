@@ -1,9 +1,11 @@
+import unittest
+
+import ee
 import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
-import unittest
+
 import sankee
-import ee
 
 ee.Initialize()
 
@@ -99,7 +101,11 @@ class TestUtils(unittest.TestCase):
         Test that the sum of normalized changes is equal to the number of input classes.
         """
         test_data = pd.DataFrame(
-            {"source": [0, 1, 1, 2, 3, 4, 4], "target": [5, 6, 7, 7, 8, 9, 10], "value": [1, 2, 1, 3, 1, 5, 9]}
+            {
+                "source": [0, 1, 1, 2, 3, 4, 4],
+                "target": [5, 6, 7, 7, 8, 9, 10],
+                "value": [1, 2, 1, 3, 1, 5, 9],
+            }
         )
 
         num_classes = test_data.source.unique().size
@@ -146,15 +152,28 @@ class TestSankee(unittest.TestCase):
 
         self.assertTrue(np.array_equal(cleaned, target))
 
-
     def test_mismatched_label_list(self):
         """
         If the label list is a different length than the image list, a ValueError should be raised.
         """
         with self.assertRaises(ValueError):
-            sankee.sankify(image_list=TEST_IMG_LIST, region=TEST_REGION, label_list=["2001", "2010", "2020"], band=TEST_BAND, labels=TEST_LABELS, palette=TEST_PALETTE)
+            sankee.sankify(
+                image_list=TEST_IMG_LIST,
+                region=TEST_REGION,
+                label_list=["2001", "2010", "2020"],
+                band=TEST_BAND,
+                labels=TEST_LABELS,
+                palette=TEST_PALETTE,
+            )
         with self.assertRaises(ValueError):
-            sankee.sankify(image_list=TEST_IMG_LIST, region=TEST_REGION, label_list=["2001"], band=TEST_BAND, labels=TEST_LABELS, palette=TEST_PALETTE)
+            sankee.sankify(
+                image_list=TEST_IMG_LIST,
+                region=TEST_REGION,
+                label_list=["2001"],
+                band=TEST_BAND,
+                labels=TEST_LABELS,
+                palette=TEST_PALETTE,
+            )
 
     def test_bad_band(self):
         """
@@ -162,7 +181,9 @@ class TestSankee(unittest.TestCase):
         """
         labeled = sankee.core._label_images(TEST_IMG_LIST, TEST_LABEL_LIST)
         with self.assertRaises(ValueError):
-            sankee.core._collect_sample_data(labeled, region=TEST_REGION, band="bad_band", label_list=TEST_LABEL_LIST)
+            sankee.core._collect_sample_data(
+                labeled, region=TEST_REGION, band="bad_band", label_list=TEST_LABEL_LIST
+            )
 
     def test_format_for_sankey_with_two_periods(self):
         """
@@ -189,7 +210,10 @@ class TestSankee(unittest.TestCase):
                 r"100% of Deciduous broadleaf forest remained Deciduous broadleaf forest",
             ],
         )
-        self.assertEqual(node_palette, ["#086a10", "#dcd159", "#78d203", "#086a10", "#dcd159", "#54a708", "#78d203"])
+        self.assertEqual(
+            node_palette,
+            ["#086a10", "#dcd159", "#78d203", "#086a10", "#dcd159", "#54a708", "#78d203"],
+        )
         self.assertEqual(link_palette, ["#086a10", "#dcd159", "#dcd159", "#78d203"])
         self.assertEqual(
             label,
@@ -223,7 +247,8 @@ class TestSankee(unittest.TestCase):
         ) = sankee.core._format_for_sankey(THREE_PERIOD_TEST_DATA, TEST_LABELS, TEST_PALETTE)
 
         self.assertEqual(
-            node_labels, ["start", "start", "start", "mid", "mid", "mid", "mid", "end", "end", "end", "end"]
+            node_labels,
+            ["start", "start", "start", "mid", "mid", "mid", "mid", "end", "end", "end", "end"],
         )
         self.assertEqual(
             link_labels,
@@ -314,7 +339,9 @@ class TestSankee(unittest.TestCase):
         Test that descriptive link labels are built correctly whether classes
         changed or remained the same.
         """
-        change_df = pd.DataFrame({"source_label": ["a", "a"], "target_label": ["b", "a"], "change": [0.8, 0.2]})
+        change_df = pd.DataFrame(
+            {"source_label": ["a", "a"], "target_label": ["b", "a"], "change": [0.8, 0.2]}
+        )
         link_labels = sankee.core._build_link_labels(change_df)
 
         self.assertEqual(link_labels[0], "80% of a became b")
