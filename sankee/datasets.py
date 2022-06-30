@@ -5,11 +5,13 @@ import numpy as np
 from sankee import utils
 
 class Dataset:
-    def __init__(self, collection_name, band, labels, palette):
+    def __init__(self, name, id, band, labels, palette, years):
         """
         Parameters
         ----------
-        collection_name : str
+        name : str
+            The name of the dataset.
+        id : str
             The :code:`system:id` of the :code:`ee.ImageCollection` representing the dataset.
         band : str 
             The name of the image band that contains class values.
@@ -17,11 +19,15 @@ class Dataset:
             A dictionary matching class values to their corresponding labels.
         palette : dict 
             A dictionary matching class values to their corresponding hex colors.
+        years : List[int]
+            All years available in this dataset.
         """
-        self.collection_name = collection_name
+        self.name = name
+        self.id = id
         self.band = band
         self.labels = labels
         self.palette = palette
+        self.years = years
 
         if sorted(labels.keys()) != sorted(palette.keys()):
             raise ValueError("Labels and palette must have the same keys.")
@@ -42,7 +48,7 @@ class Dataset:
     def collection(self):
         """The :code:`ee.ImageCollection` representing the dataset.
         """
-        return ee.ImageCollection(self.collection_name)
+        return ee.ImageCollection(self.id)
 
     def get_color(self, label):
         """Take a label and return the associated color from the dataset's palette.
@@ -117,6 +123,10 @@ class Dataset:
         img = self.collection.filterDate(str(year), str(year + 1)).first()
         return img.select(self.band)
 
+    def list_years(self):
+        """Get an ee.List of all years in the collection."""
+        return self.collection.aggregate_array("system:time_start").map(lambda ms: ee.Date(ms).get("year")).distinct()
+
 
 class LCMS_Dataset(Dataset):
     def get_year(self, year):
@@ -173,7 +183,8 @@ def convert_NLCD1992_to_2016(img):
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
 LCMS_LU = LCMS_Dataset(
-    collection_name="USFS/GTAC/LCMS/v2021-7",
+    name="LCMS LU - Land Change Monitoring System Land Use",
+    id="USFS/GTAC/LCMS/v2021-7",
     band="Land_Use",
     labels = {
             1: "Agriculture",
@@ -192,12 +203,14 @@ LCMS_LU = LCMS_Dataset(
             5: "#a1a1a1",
             6: "#c2b34a",
             7: "#1B1716",
-        }
+        },
+    years = list(range(1985, 2022))
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
 LCMS_LC = LCMS_Dataset(
-    collection_name="USFS/GTAC/LCMS/v2021-7",
+    name="LCMS LC - Land Change Monitoring System Land Cover",
+    id="USFS/GTAC/LCMS/v2021-7",
     band="Land_Cover",
     labels = {
             1: "Trees",
@@ -232,59 +245,62 @@ LCMS_LC = LCMS_Dataset(
             13: "#ffffff", 
             14: "#4780f3", 
             15: "#1B1716", 
-        }
+        },
+    years = list(range(1985, 2022))
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/USGS_NLCD_RELEASES_2019_REL_NLCD
 NLCD = Dataset(
-    collection_name="USGS/NLCD_RELEASES/2019_REL/NLCD",
+    name="NLCD - National Land Cover Database",
+    id="USGS/NLCD_RELEASES/2019_REL/NLCD",
     band="landcover",
     labels = {
-            1: "No data",
-            11: "Open water",
-            12: "Perennial ice/snow",
-            21: "Developed, open space",
-            22: "Developed, low intensity",
-            23: "Developed, medium intensity",
-            24: "Developed, high intensity",
-            31: "Barren land (rock/sand/clay)",
-            41: "Deciduous forest",
-            42: "Evergreen forest",
-            43: "Mixed forest",
-            51: "Dwarf scrub",
-            52: "Shrub/scrub",
-            71: "Grassland/herbaceous",
-            72: "Sedge/herbaceous",
-            73: "Lichens",
-            74: "Moss",
-            81: "Pasture/hay",
-            82: "Cultivated crops",
-            90: "Woody wetlands",
-            95: "Emergent herbaceous wetlands",
+        1: "No data",
+        11: "Open water",
+        12: "Perennial ice/snow",
+        21: "Developed, open space",
+        22: "Developed, low intensity",
+        23: "Developed, medium intensity",
+        24: "Developed, high intensity",
+        31: "Barren land (rock/sand/clay)",
+        41: "Deciduous forest",
+        42: "Evergreen forest",
+        43: "Mixed forest",
+        51: "Dwarf scrub",
+        52: "Shrub/scrub",
+        71: "Grassland/herbaceous",
+        72: "Sedge/herbaceous",
+        73: "Lichens",
+        74: "Moss",
+        81: "Pasture/hay",
+        82: "Cultivated crops",
+        90: "Woody wetlands",
+        95: "Emergent herbaceous wetlands",
     },
     palette = {
-            1: "#000000",
-            11: "#466b9f",
-            12: "#d1def8",
-            21: "#dec5c5",
-            22: "#d99282",
-            23: "#eb0000",
-            24: "#ab0000",
-            31: "#b3ac9f",
-            41: "#68ab5f",
-            42: "#1c5f2c",
-            43: "#b5c58f",
-            51: "#af963c",
-            52: "#ccb879",
-            71: "#dfdfc2",
-            72: "#d1d182",
-            73: "#a3cc51",
-            74: "#82ba9e",
-            81: "#dcd939",
-            82: "#ab6c28",
-            90: "#b8d9eb",
-            95: "#6c9fb8",
-    }
+        1: "#000000",
+        11: "#466b9f",
+        12: "#d1def8",
+        21: "#dec5c5",
+        22: "#d99282",
+        23: "#eb0000",
+        24: "#ab0000",
+        31: "#b3ac9f",
+        41: "#68ab5f",
+        42: "#1c5f2c",
+        43: "#b5c58f",
+        51: "#af963c",
+        52: "#ccb879",
+        71: "#dfdfc2",
+        72: "#d1d182",
+        73: "#a3cc51",
+        74: "#82ba9e",
+        81: "#dcd939",
+        82: "#ab6c28",
+        90: "#b8d9eb",
+        95: "#6c9fb8",
+    },
+    years = [2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019]
 )
 
 # TODO: Deprecate this somehow
@@ -292,7 +308,8 @@ NLCD2016 = NLCD
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
 MODIS_LC_TYPE1 = Dataset(
-    collection_name="MODIS/006/MCD12Q1",
+    name="MCD12Q1 - MODIS Global Land Cover Type 1",
+    id="MODIS/006/MCD12Q1",
     band="LC_Type1",
     labels = {
         1: "Evergreen conifer forest",
@@ -331,12 +348,14 @@ MODIS_LC_TYPE1 = Dataset(
         15: "#69fff8",
         16: "#f9ffa4",
         17: "#1c0dff",
-    }
+    },
+    years = list(range(2001, 2021))
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
 MODIS_LC_TYPE2 = Dataset(
-    collection_name="MODIS/006/MCD12Q1",
+    name="MCD12Q1 - MODIS Global Land Cover Type 2",
+    id="MODIS/006/MCD12Q1",
     band="LC_Type2",
     labels = {
         0: "Water",
@@ -373,12 +392,14 @@ MODIS_LC_TYPE2 = Dataset(
         13: "#a5a5a5",
         14: "#ff6d4c",
         15: "#f9ffa4",
-    }
+    },
+    years = list(range(2001, 2021))
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
 MODIS_LC_TYPE3 = Dataset(
-    collection_name="MODIS/006/MCD12Q1",
+    name="MCD12Q1 - MODIS Global Land Cover Type 3",
+    id="MODIS/006/MCD12Q1",
     band="LC_Type3",
     labels = {
         0: "Water",
@@ -405,12 +426,14 @@ MODIS_LC_TYPE3 = Dataset(
         8: "#54a708",
         9: "#f9ffa4",
         10: "#a5a5a5",
-    }
+    },
+    years = list(range(2001, 2021))
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_Landcover_100m_Proba-V-C3_Global
 CGLS_LC100 = Dataset(
-    collection_name="COPERNICUS/Landcover/100m/Proba-V-C3/Global",
+    name="CGLS - Copernicus Global Land Cover",
+    id="COPERNICUS/Landcover/100m/Proba-V-C3/Global",
     band="discrete_classification",
     labels = {
         0: "Unknown",
@@ -461,7 +484,8 @@ CGLS_LC100 = Dataset(
         125: "#929900",
         126: "#648C00",
         200: "#000080",
-    }
+    },
+    years = list(range(2015, 2020))
 )
 
 _all = [
@@ -475,4 +499,4 @@ _all = [
 ]
 
 # For backwards compatibility
-names = lambda : [d.collection_name for d in _all]
+names = lambda : [d.id for d in _all]

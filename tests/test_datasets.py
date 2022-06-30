@@ -41,3 +41,7 @@ class TestDatasets(unittest.TestCase):
             img = dataset.get_year(2016)
             self.assertEqual(img.get("system:id").getInfo(), "MODIS/006/MCD12Q1/2016_01_01")
             self.assertListEqual(img.bandNames().getInfo(), [dataset.band])
+
+    def test_years(self):
+        for dataset in sankee.datasets._all:
+            self.assertListEqual(dataset.years, dataset.list_years().getInfo())

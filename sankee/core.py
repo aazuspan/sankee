@@ -107,7 +107,7 @@ def _build_dataset(dataset=None, band=None, labels=None, palette=None):
         labels = labels if labels else dataset.labels
         palette = palette if palette else dataset.palette
 
-    built = Dataset(collection_name=None, band=band, labels=labels, palette=palette)
+    built = Dataset(name=None, id=None, band=band, labels=labels, palette=palette, years=None)
 
     return built
 
