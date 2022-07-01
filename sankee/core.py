@@ -1,3 +1,4 @@
+import sys
 from typing import Any, Dict, List, Tuple, Union
 
 import ee
@@ -79,7 +80,7 @@ def sankify(
     """
     # Older versions of geemap are incompatible with sankee v0.1.0 and pass the wrong positional
     # arguments.
-    if isinstance(band, ee.Geometry):
+    if isinstance(band, ee.Geometry) and "geemap" in sys.modules:
         raise ValueError(
             "Your versions of `geemap` and `sankee` are incompatible. Please update geemap to the "
             "latest version (pip install -U geemap)."
