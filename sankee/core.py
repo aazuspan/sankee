@@ -13,10 +13,10 @@ LABEL_PROPERTY = "sankee_label"
 
 def sankify(
     image_list: List[ee.Image],
-    region: ee.Geometry,
     band: str,
     labels: Dict[int, str],
     palette: Dict[int, str],
+    region: Union[None, ee.Geometry] = None,
     label_list: Union[None, List[str]] = None,
     exclude: Union[None, List[int]] = None,
     max_classes: Union[None, int] = None,
@@ -35,8 +35,6 @@ def sankify(
         An ordered list of images representing a time series of classified data. Each image will be
         sampled to generate the Sankey plot. Any length of list is allowed, but lists with more than
         3 or 4 images may produce unusable plots.
-    region : ee.Geometry
-        A region to generate samples within. The region must overlap all images.
     band : str
         The name of the band in all images of image_list that contains classified data.
     labels : dict
@@ -45,6 +43,10 @@ def sankify(
     palette : dict
         The colors associated with each value of all images in image_list. Every value in the images
         must be included as a key in the palette dictionary.
+    region : ee.Geometry, default None
+        A region to generate samples within. The region must overlap all images. If none is
+        provided, the geometry of the first image will be used. For this to work, images must be
+        bounded.
     label_list : List[str], default None
         An ordered list of labels corresponding to the images. The list must be the same length as
         image_list. If none is provided, sequential numeric labels will be automatically assigned
@@ -75,11 +77,22 @@ def sankify(
     plotly.graph_objs._figure.Figure
         An interactive Sankey plot.
     """
+    # Older versions of geemap are incompatible with sankee v0.1.0 and pass the wrong positional
+    # arguments.
+    if isinstance(band, ee.Geometry):
+        raise ValueError(
+            "Your versions of `geemap` and `sankee` are incompatible. Please update geemap to the "
+            "latest version (pip install -U geemap)."
+        ) from None
+
     if dataset is not None:
         raise ValueError(
             "`sankee.sankify` no longer supports a `dataset` parameter. Use "
             "`Dataset.sankify` instead."
         )
+
+    if region is None:
+        region = image_list[0].geometry()
 
     label_list = label_list if label_list is not None else list(range(len(image_list)))
     label_list = [str(label) for label in label_list]

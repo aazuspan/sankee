@@ -137,11 +137,11 @@ class Dataset:
         exclude = exclude + [self.nodata] if self.nodata is not None else exclude
         return sankify(
             image_list=imgs,
-            region=region,
             label_list=years,
             labels=self.labels,
             band=self.band,
             palette=self.palette,
+            region=region,
             exclude=exclude,
             max_classes=max_classes,
             n=n,
@@ -313,6 +313,9 @@ NLCD = Dataset(
     years=[2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019],
     nodata=1,
 )
+
+# Kept for backwards compatibility with older `geemap` versions
+NLCD2016 = NLCD
 
 MODIS_LC_TYPE1 = MODIS_Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 1",
