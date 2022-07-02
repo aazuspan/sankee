@@ -132,6 +132,9 @@ class Dataset:
         plotly.graph_objs._figure.Figure
             An interactive Sankey plot.
         """
+        if len(set(years)) < 2:
+            raise ValueError("Select at least two unique years.")
+
         imgs = [self.get_year(year) for year in years]
         exclude = exclude if exclude is not None else []
         exclude = exclude + [self.nodata] if self.nodata is not None else exclude

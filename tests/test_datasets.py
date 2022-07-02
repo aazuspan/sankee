@@ -53,3 +53,14 @@ class TestDatasets(unittest.TestCase):
     def test_years(self):
         for dataset in sankee.datasets.datasets:
             self.assertListEqual(dataset.years, dataset.list_years().getInfo())
+
+    def test_get_unsupported_year(self):
+        with self.assertRaisesRegex(ValueError, "does not include year"):
+            sankee.datasets.NLCD.get_year(2017)
+
+    def test_get_invalid_years(self):
+        """Single or duplicate years should raise errors."""
+        with self.assertRaisesRegex(ValueError, "two unique years"):
+            sankee.datasets.LCMS_LU.sankify(years=[2017], region=None)
+        with self.assertRaisesRegex(ValueError, "two unique years"):
+            sankee.datasets.LCMS_LU.sankify(years=[2017, 2017], region=None)
