@@ -7,9 +7,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from sankee import utils
-
-# Temporary property name to store image labels in
-LABEL_PROPERTY = "sankee_label"
+from sankee.sampling import collect_sankey_data
 
 
 def sankify(
@@ -102,116 +100,20 @@ def sankify(
     if len(set(label_list)) != len(label_list):
         raise ValueError("All labels in the `label_list` must be unique.")
 
-    labeled_images = _label_images(image_list, label_list)
-    sample_data = _collect_sample_data(labeled_images, region, band, label_list, n, scale, seed)
+    sample_data = collect_sankey_data(
+        image_list=image_list,
+        image_labels=label_list,
+        region=region,
+        band=band,
+        n=n,
+        scale=scale,
+        seed=seed,
+    )
     cleaned_data = _clean_data(sample_data, exclude, max_classes)
 
     check_data_is_compatible(labels, cleaned_data)
 
     return _generate_sankey_plot(cleaned_data, labels, palette, title)
-
-
-def _label_images(image_list: List[ee.Image], label_list: List[str]) -> List[ee.Image]:
-    """
-    Set a label property for each image in a list using the corresponding label list.
-    """
-    labeled = []
-    for img, label in zip(image_list, label_list):
-        labeled.append(img.set(LABEL_PROPERTY, label))
-
-    return labeled
-
-
-def _collect_sample_data(
-    image_list: List[ee.Image],
-    region: ee.Geometry,
-    band: str,
-    label_list: List[str],
-    n: int = 500,
-    scale: Union[None, int] = None,
-    seed: int = 0,
-) -> pd.DataFrame:
-    """
-    Randomly sample values of a list of images to quantify change over time.
-
-    Parameters
-    ----------
-    image_list : List[ee.Image]
-        Labeled, classified images representing change over time.
-    region : ee.Geometry
-        A region to sample within.
-    band : str
-        The name of the band in all images of image_list that contains classified data.
-    label_list : List[str]
-        A list of labels associated with each image in the image_list. If none is provided,
-        sequential numeric labels will be automatically assigned starting at 0.
-    n : int, default 500
-        The number of sample points to randomly generate for characterizing all images. More samples
-        will provide more representative data but will take longer to process.
-    scale : int, default None
-        The scale in image units to perform sampling at. If none is provided, GEE will attempt to
-        use the image's nominal scale, which may cause errors depending on the image projection.
-    seed : int, default 0
-        The random seed used to generate sample points, for repeatability.
-
-    Returns
-    -------
-    pd.DataFrame
-        A dataframe in which each row represents a single sample point and columns represent the
-        class of that point in each image of the image list.
-    """
-    samples = ee.FeatureCollection.randomPoints(region, n, seed)
-
-    sample_data = _extract_values_from_images_at_points(image_list, samples, band, scale)
-
-    try:
-        data = utils.feature_collection_to_dataframe(sample_data)
-    except ee.EEException as e:
-        # ee may raise an error if the band name isn't valid. This is a bit of a hack to catch that
-        # since ee doesn't raise more specific errors.
-        if band in e.args[0]:
-            raise ValueError(
-                f'"{band}" is not a valid band name. Check that the dataset band name exists for '
-                "all images."
-            )
-        else:
-            raise e
-
-    _check_for_missing_samples(data, label_list)
-
-    return data[label_list]
-
-
-def _check_for_missing_samples(data: pd.DataFrame, label_list: List[str]) -> None:
-    """Check that the sampled data has a column for each label in the label list. If not, it may be
-    that sampling occurred outside of the image bounds.
-    """
-    missing_labels = [label for label in label_list if label not in data.columns]
-    if missing_labels:
-        raise Exception(
-            f"No valid samples were collected in these images: {missing_labels}. Check that the"
-            " sampling region overlaps the image bounds."
-        )
-
-
-def _extract_values_from_images_at_points(
-    image_list: List[ee.Image], sample_points: ee.FeatureCollection, band: str, scale: int
-) -> ee.FeatureCollection:
-    """Take a list of images and a collection of sample points and extract image values to each
-    sample point. The image values will be stored in a property based on the image label.
-    """
-
-    def extract_values_at_point(pt):
-        for img in image_list:
-            cover = img.reduceRegion(
-                reducer=ee.Reducer.first(), geometry=pt.geometry(), scale=scale
-            ).get(band)
-            label = img.get(LABEL_PROPERTY)
-            pt = ee.Feature(pt).set(label, cover)
-
-        return pt
-
-    return sample_points.map(extract_values_at_point)
 
 
 def _clean_data(

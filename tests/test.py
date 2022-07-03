@@ -189,16 +189,6 @@ class TestSankee(unittest.TestCase):
                 palette=TEST_PALETTE,
             )
 
-    def test_bad_band(self):
-        """
-        If a band name is passed to _collect_sample_data and it's not in the image, a ValueError should be raised.
-        """
-        labeled = sankee.core._label_images(TEST_IMG_LIST, TEST_LABEL_LIST)
-        with self.assertRaises(ValueError):
-            sankee.core._collect_sample_data(
-                labeled, region=TEST_REGION, band="bad_band", label_list=TEST_LABEL_LIST
-            )
-
     def test_format_for_sankey_with_two_periods(self):
         """
         Test that mock table data for a two-period time series is correctly reformatted for Sankey plotting.

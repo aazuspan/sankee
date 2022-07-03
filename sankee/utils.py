@@ -1,13 +1,6 @@
 import pandas as pd
 
 
-def feature_collection_to_dataframe(fc):
-    """
-    Extract and return FeatureCollection properties as a Pandas dataframe.
-    """
-    return pd.DataFrame.from_dict([feat["properties"] for feat in fc.toList(fc.size()).getInfo()])
-
-
 def normalized_change(data, group_col, count_col):
     """
     Perform group-wise data normalization to a column of values. Output values will be the
