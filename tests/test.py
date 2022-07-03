@@ -119,7 +119,7 @@ class TestSankee(unittest.TestCase):
         Test that NA values will be dropped by _clean_data
         """
         test_input = pd.DataFrame({0: [0.0, np.nan, 2.0], 1: [1, 2, 3]})
-        cleaned = sankee.core._clean_data(test_input)
+        cleaned = sankee.plotting._clean_data(test_input)
         target = pd.DataFrame({0: [0.0, 2.0], 1: [1, 3]})
 
         self.assertTrue(np.array_equal(cleaned, target))
@@ -128,7 +128,7 @@ class TestSankee(unittest.TestCase):
         """
         Test that values are correctly excluded by _clean_data
         """
-        cleaned = sankee.core._clean_data(TEST_DATA, exclude=[2])
+        cleaned = sankee.plotting._clean_data(TEST_DATA, exclude=[2])
         target = pd.DataFrame(
             {
                 "start": [1, 1, 1, 4],
@@ -142,7 +142,7 @@ class TestSankee(unittest.TestCase):
         """
         Test that small classes are removed to match max_classes by _clean_data
         """
-        cleaned = sankee.core._clean_data(TEST_DATA, max_classes=2)
+        cleaned = sankee.plotting._clean_data(TEST_DATA, max_classes=2)
         target = pd.DataFrame(
             {
                 "start": [1, 1, 1, 2],
@@ -202,7 +202,7 @@ class TestSankee(unittest.TestCase):
             source,
             target,
             value,
-        ) = sankee.core._format_for_sankey(TEST_DATA, TEST_LABELS, TEST_PALETTE)
+        ) = sankee.plotting._format_for_sankey(TEST_DATA, TEST_LABELS, TEST_PALETTE)
 
         self.assertEqual(node_labels, ["start", "start", "start", "end", "end", "end", "end"])
         self.assertEqual(
@@ -248,7 +248,7 @@ class TestSankee(unittest.TestCase):
             source,
             target,
             value,
-        ) = sankee.core._format_for_sankey(THREE_PERIOD_TEST_DATA, TEST_LABELS, TEST_PALETTE)
+        ) = sankee.plotting._format_for_sankey(THREE_PERIOD_TEST_DATA, TEST_LABELS, TEST_PALETTE)
 
         self.assertEqual(
             node_labels,
@@ -334,7 +334,7 @@ class TestSankee(unittest.TestCase):
             }
         )
 
-        labels = sankee.core._build_labels(data)
+        labels = sankee.plotting._build_labels(data)
 
         self.assertListEqual(labels, ["zero", "one", "two", "zero", "four", "five"])
 
@@ -346,7 +346,7 @@ class TestSankee(unittest.TestCase):
         change_df = pd.DataFrame(
             {"source_label": ["a", "a"], "target_label": ["b", "a"], "change": [0.8, 0.2]}
         )
-        link_labels = sankee.core._build_link_labels(change_df)
+        link_labels = sankee.plotting._build_link_labels(change_df)
 
         self.assertEqual(link_labels[0], "80% of a became b")
         self.assertEqual(link_labels[1], "20% of a remained a")
@@ -364,7 +364,7 @@ class TestSankee(unittest.TestCase):
                 "target_period": ["end", "end", "end", "end"],
             }
         )
-        node_labels = sankee.core._build_node_labels(data)
+        node_labels = sankee.plotting._build_node_labels(data)
         self.assertListEqual(node_labels, ["start", "end", "end", "end", "end"])
 
 

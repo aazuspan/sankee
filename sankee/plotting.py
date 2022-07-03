@@ -358,6 +358,30 @@ def _plot(
     """
     Generate a Sankey plot of land cover change over an arbitrary number of time steps.
     """
+    shadow_color = "#76777a"
+    label_style = f"""
+        color: #fff;
+        font-weight: 600;
+        letter-spacing: -1px;
+        text-shadow:
+            0 0 4px black,
+            -1px 1px 0 {shadow_color},
+            1px 1px 0 {shadow_color},
+            1px -1px 0 {shadow_color},
+            -1px -1px 0 {shadow_color};
+    """
+
+    title_style = """
+        color: #fff;
+        font-weight: 900;
+        word-spacing: 10px;
+        letter-spacing: 3px;
+        text-shadow:
+            0 0 1px black,
+            0 0 2px black,
+            0 0 4px black;
+    """
+
     fig = go.Figure(
         data=[
             go.Sankey(
@@ -367,7 +391,7 @@ def _plot(
                     line=dict(color="#000000", width=1),
                     customdata=node_labels,
                     hovertemplate="%{customdata}<extra></extra>",
-                    label=label,
+                    label=[f"<span style='{label_style}'>{s}</span>" for s in label],
                     color=node_palette,
                 ),
                 link=dict(
@@ -384,7 +408,7 @@ def _plot(
     )
 
     fig.update_layout(
-        title_text=f"<b>{title}</b>" if title else None,
+        title_text=f"<span style='{title_style}'>{title}</span>" if title else None,
         font_size=16,
         title_x=0.5,
         paper_bgcolor="rgba(0, 0, 0, 0)",

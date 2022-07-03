@@ -4,7 +4,7 @@ import ee
 import pandas as pd
 import plotly.graph_objects as go
 
-from sankee.core import sankify
+from sankee.plotting import sankify
 
 
 class Dataset:
