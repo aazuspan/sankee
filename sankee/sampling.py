@@ -34,6 +34,8 @@ def collect_sankey_data(
     except ee.EEException as e:
         if band in str(e):
             raise ValueError(f"The band `{band}` was not found in all images.") from None
+        else:
+            raise e
 
     for image in image_labels:
         if image not in data.columns:
