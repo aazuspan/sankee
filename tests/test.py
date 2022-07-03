@@ -156,7 +156,7 @@ class TestSankee(unittest.TestCase):
         """
         If the label list is a different length than the image list, a ValueError should be raised.
         """
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "number of labels must match"):
             sankee.sankify(
                 image_list=TEST_IMG_LIST,
                 region=TEST_REGION,
@@ -165,11 +165,25 @@ class TestSankee(unittest.TestCase):
                 labels=TEST_LABELS,
                 palette=TEST_PALETTE,
             )
-        with self.assertRaises(ValueError):
+        with self.assertRaisesRegex(ValueError, "number of labels must match"):
             sankee.sankify(
                 image_list=TEST_IMG_LIST,
                 region=TEST_REGION,
                 label_list=["2001"],
+                band=TEST_BAND,
+                labels=TEST_LABELS,
+                palette=TEST_PALETTE,
+            )
+
+    def test_duplicate_label_list(self):
+        """
+        Duplicate values in the label list should raise an error
+        """
+        with self.assertRaisesRegex(ValueError, "must be unique"):
+            sankee.sankify(
+                image_list=TEST_IMG_LIST,
+                region=TEST_REGION,
+                label_list=["2001", "2001"],
                 band=TEST_BAND,
                 labels=TEST_LABELS,
                 palette=TEST_PALETTE,

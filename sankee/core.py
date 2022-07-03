@@ -99,6 +99,8 @@ def sankify(
     label_list = [str(label) for label in label_list]
     if len(label_list) != len(image_list):
         raise ValueError("The number of labels must match the number of images.")
+    if len(set(label_list)) != len(label_list):
+        raise ValueError("All labels in the `label_list` must be unique.")
 
     labeled_images = _label_images(image_list, label_list)
     sample_data = _collect_sample_data(labeled_images, region, band, label_list, n, scale, seed)

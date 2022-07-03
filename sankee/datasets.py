@@ -34,7 +34,7 @@ class Dataset:
         years : List[int]
             All years available in this dataset.
         nodata : int
-            An optional no-data values to automatically exclude when sankifying.
+            An optional no-data value to automatically exclude when sankifying.
         """
         self.name = name
         self.id = id
@@ -103,8 +103,7 @@ class Dataset:
         Parameters
         ----------
         years : List[int]
-            The years to include in the plot. If images are not available for a requested year, an
-            error will be thrown.
+            The years to include in the plot. Select at least two unique years.
         region : ee.Geometry
             A region to generate samples within. The region must overlap all images.
         exclude : list[int], default None
@@ -132,8 +131,11 @@ class Dataset:
         plotly.graph_objs._figure.Figure
             An interactive Sankey plot.
         """
-        if len(set(years)) < 2:
-            raise ValueError("Select at least two unique years.")
+        if len(years) < 2:
+            raise ValueError("Select at least two years.")
+        if len(set(years)) != len(years):
+            raise ValueError("Duplicate years found. Make sure all years are unique.")
+        years = sorted(years)
 
         imgs = [self.get_year(year) for year in years]
         exclude = exclude if exclude is not None else []

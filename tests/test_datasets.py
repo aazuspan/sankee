@@ -60,7 +60,7 @@ class TestDatasets(unittest.TestCase):
 
     def test_get_invalid_years(self):
         """Single or duplicate years should raise errors."""
-        with self.assertRaisesRegex(ValueError, "two unique years"):
+        with self.assertRaisesRegex(ValueError, "at least two years"):
             sankee.datasets.LCMS_LU.sankify(years=[2017], region=None)
-        with self.assertRaisesRegex(ValueError, "two unique years"):
-            sankee.datasets.LCMS_LU.sankify(years=[2017, 2017], region=None)
+        with self.assertRaisesRegex(ValueError, "Duplicate years"):
+            sankee.datasets.LCMS_LU.sankify(years=[2017, 2017, 2018], region=None)
