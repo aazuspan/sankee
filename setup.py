@@ -35,6 +35,7 @@ setup(
         "numpy",
         "pandas",
         "plotly>=5.2.2",
+        "ipywidgets",
     ],
     project_urls={
         "Bug Reports": "https://github.com/aazuspan/sankee/issues",

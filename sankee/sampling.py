@@ -30,7 +30,7 @@ def collect_sankey_data(
     try:
         data = pd.DataFrame.from_dict(
             [feat["properties"] for feat in samples.toList(samples.size()).getInfo()]
-        )
+        ).dropna()
     except ee.EEException as e:
         if band in str(e):
             raise ValueError(f"The band `{band}` was not found in all images.") from None

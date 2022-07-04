@@ -1,13 +1,29 @@
 import sys
-from typing import Any, Dict, List, Tuple, Union
+from collections import namedtuple
+from typing import Any, Dict, List, Union
 
 import ee
+import ipywidgets as widgets
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
 from sankee import utils
 from sankee.sampling import collect_sankey_data
+
+SankeyParameters = namedtuple(
+    "SankeyParameters",
+    [
+        "node_labels",
+        "link_labels",
+        "node_palette",
+        "link_palette",
+        "label",
+        "source",
+        "target",
+        "value",
+    ],
+)
 
 
 def sankify(
@@ -109,45 +125,16 @@ def sankify(
         scale=scale,
         seed=seed,
     )
-    cleaned_data = _clean_data(sample_data, exclude, max_classes)
+    check_data_is_compatible(labels, sample_data)
 
-    check_data_is_compatible(labels, cleaned_data)
-
-    return _generate_sankey_plot(cleaned_data, labels, palette, title)
-
-
-def _clean_data(
-    data: pd.DataFrame, exclude: List[int] = None, max_classes: Union[None, int] = None
-) -> pd.DataFrame:
-    """
-    Perform some cleaning on data before plotting by excluding unwanted classes and limiting the
-    number of classes.
-
-    Parameters
-    ----------
-    data : pd.DataFrame
-        A dataframe in which each row represents as single sample point and columns represent the
-        class of that point in each image of an image list.
-    exclude : List[int]
-        A list of class values to remove from the dataframe.
-    max_classes : int
-        The maximum number of unique classes to include in the dataframe. If more classes are
-        present, the smallest classes will be omitted from the plot. If max_classes is None, no
-        classes will be dropped.
-
-    Returns
-    -------
-    pd.DataFrame
-        A cleaned dataframe.
-    """
-    data = data.dropna()
-
-    if exclude:
-        data = data[~data.isin(exclude).any(axis=1)]
-    if max_classes:
-        data = utils.drop_small_classes(data, max_classes)
-
-    return data
+    return SankeyPlot(
+        data=sample_data,
+        labels=labels,
+        palette=palette,
+        title=title,
+        exclude=exclude,
+        max_classes=max_classes,
+    )
 
 
 def check_data_is_compatible(labels: Dict[int, str], data: pd.DataFrame) -> None:
@@ -166,252 +153,323 @@ def check_data_is_compatible(labels: Dict[int, str], data: pd.DataFrame) -> None
         )
 
 
-def _generate_sankey_plot(
-    data: pd.DataFrame, labels: Dict[int, str], palette: Dict[int, str], title: str
-) -> go.Figure:
-    (
-        node_labels,
-        link_labels,
-        node_palette,
-        link_palette,
-        label,
-        source,
-        target,
-        value,
-    ) = _format_for_sankey(data, labels, palette)
-    return _plot(
-        node_labels,
-        link_labels,
-        node_palette,
-        link_palette,
-        label,
-        source,
-        target,
-        value,
-        title=title,
-    )
+class SankeyPlot(widgets.DOMWidget):
+    def __init__(
+        self,
+        data: pd.DataFrame,
+        labels: Dict[int, str],
+        palette: Dict[int, str],
+        title: str,
+        exclude: List[int] = None,
+        max_classes: int = None,
+    ):
+        self.data = data
+        self.labels = labels
+        self.palette = palette
+        self.title = title
 
+        self.exclude = exclude if exclude is not None else []
+        self.max_classes = max_classes
 
-def _format_for_sankey(
-    data: pd.DataFrame, labels: Dict[int, str], palette: Dict[int, str]
-) -> Tuple:
-    """
-    Take a dataframe of data representing classified sample points and return all parameters needed
-    to generate a Sankey plot. This is done by looping through columns in groups of two representing
-    start and end conditions and reformating data to match the Plotly Sankey input parameters.
+        self.dataframe = self.generate_dataframe(data)
+        self.plot = self.generate_plot()
+        self.gui = self.generate_gui()
 
-    Parameters
-    ----------
-    data : pd.DataFrame
-        A dataframe in which each row represents as single sample point and columns represent the
-        columns represent classes over an arbitrary number of time periods.
-    labels : Dict[int, str]
-        A dictionary mapping class values to their corresponding labels.
-    palette : Dict[int, str]
-        A dictionary mapping class values to their corresponding colors.
+    def get_active_classes(self) -> pd.Series:
+        """Return all unique active, visibile class values after filtering."""
+        df = self.generate_filtered_dataframe()
 
-    Returns
-    -------
-    Tuple
-        A tuple of the following parameters: node_labels, link_labels, node_palette, link_palette,
-        label, source, target, values.
-    """
-    formatted_data = _group_and_format_data(data, labels)
+        return df[["source", "target"]].melt().value.unique()
 
-    node_labels = _build_node_labels(formatted_data)
-    link_labels = _build_link_labels(formatted_data)
-    label = _build_labels(formatted_data)
+    def get_all_classes(self) -> pd.Series:
+        """Return all unique class values before any filtering."""
+        return self.dataframe[["source", "target"]].melt().value.unique()
 
-    source = formatted_data.source.tolist()
-    target = formatted_data.target.tolist()
-    value = formatted_data.value.tolist()
+    def generate_filtered_dataframe(self) -> pd.DataFrame:
+        """Apply filtering to the sample data, recalculating values like class percentages."""
+        data = self.data.copy()
 
-    def get_color(label):
-        return palette[[k for k, v in labels.items() if v == label][0]]
-
-    node_palette = [get_color(lab) for lab in label]
-    link_palette = [get_color(i) for i in [label[j] for j in source]]
-
-    return (node_labels, link_labels, node_palette, link_palette, label, source, target, value)
-
-
-def _group_and_format_data(data: pd.DataFrame, labels: List[str]) -> pd.DataFrame:
-    """
-    Take raw data, group it into groups of two, and generate a formatted dataframe.
-    """
-    current_index = 0
-
-    dfs = []
-    for group in _group_columns(data):
-        sankified = _reformat_group(data, group, labels, start_index=current_index)
-        # The start index of the next column group will be the end index of this column group. This
-        # sets the index offset to achieve that.
-        current_index = sankified.target.min()
-        dfs.append(sankified)
-
-    return pd.concat(dfs)
-
-
-def _group_columns(data: pd.DataFrame) -> pd.DataFrame:
-    """
-    Yield all groups of two adjacent columns from a dataframe.
-    """
-    for i in range(data.columns.size - 1):
-        group_indexes = [i, i + 1]
-        yield data.iloc[:, group_indexes]
-
-
-def _reformat_group(
-    raw_data: pd.DataFrame, group_data: pd.DataFrame, labels: List[str], start_index: int = 0
-) -> pd.DataFrame:
-    column_list = group_data.columns.tolist()
-
-    # Transform the data to get counts of each combination of condition
-    sankey_data = group_data.groupby(group_data.columns.tolist()).size().reset_index(name="value")
-
-    # Calculate normalized change from start to end condition
-    sankey_data["change"] = utils.normalized_change(sankey_data, column_list[0], "value")
-
-    sankey_data = _assign_unique_indexes(raw_data, sankey_data, start_index)
-
-    # Assign labels to each source and target
-    sankey_data["source_label"] = sankey_data.iloc[:, 0].apply(lambda i: labels[i])
-    sankey_data["target_label"] = sankey_data.iloc[:, 1].apply(lambda i: labels[i])
-
-    # Store the labels of the time series periods
-    sankey_data["source_period"] = column_list[0]
-    sankey_data["target_period"] = column_list[1]
-
-    return sankey_data[
-        [
-            "source",
-            "target",
-            "value",
-            "change",
-            "source_label",
-            "target_label",
-            "source_period",
-            "target_period",
-        ]
-    ]
-
-
-def _assign_unique_indexes(
-    raw_data: pd.DataFrame, sankey_data: pd.DataFrame, start_index: int
-) -> pd.DataFrame:
-    column_list = sankey_data.columns.tolist()
-
-    # Get lists of unique source and target classes
-    unique_source = pd.unique(raw_data[column_list[0]].values.flatten()).tolist()
-    unique_target = pd.unique(raw_data[column_list[1]].values.flatten()).tolist()
-
-    # Generate a unique index for each source and target
-    sankey_data["source"] = sankey_data.iloc[:, 0].apply(
-        lambda x: unique_source.index(x) + start_index
-    )
-    # Offset the target IDs by the last source class to prevent overlap with source IDs
-    sankey_data["target"] = sankey_data.iloc[:, 1].apply(
-        lambda x: unique_target.index(x) + sankey_data.source.max() + 1
-    )
-
-    return sankey_data
-
-
-def _build_node_labels(data: pd.DataFrame) -> List[str]:
-    """
-    Build a list of period labels for nodes, corresponding to the link indexes.
-    """
-    labels = pd.concat([data.source, data.target])
-    periods = pd.concat([data.source_period, data.target_period])
-    combined = pd.DataFrame({"label": labels, "period": periods})
-    return combined.groupby("label").period.first().tolist()
-
-
-def _build_link_labels(data: pd.DataFrame) -> List[str]:
-    """
-    Build strings describing the change in states for each row of the dataframe.
-    """
-    link_labels = []
-    for _, row in data.iterrows():
-        verb = "remained" if row.source_label == row.target_label else "became"
-        link_label = f"{round(row.change * 100)}% of {row.source_label} {verb} {row.target_label}"
-        link_labels.append(link_label)
-    return link_labels
-
-
-def _build_labels(data: pd.DataFrame) -> List[str]:
-    max_id = data.target.max()
-    # Build empty placeholder labels for each class
-    label = [None for i in range(max_id + 1)]
-
-    for _, row in data.iterrows():
-        # Iteratively replace the placeholder labels with correct labels for each index
-        label[row.source] = row.source_label
-        label[row.target] = row.target_label
-
-    return label
-
-
-def _plot(
-    node_labels, link_labels, node_palette, link_palette, label, source, target, value, title=None
-) -> go.Figure:
-    """
-    Generate a Sankey plot of land cover change over an arbitrary number of time steps.
-    """
-    shadow_color = "#76777a"
-    label_style = f"""
-        color: #fff;
-        font-weight: 600;
-        letter-spacing: -1px;
-        text-shadow:
-            0 0 4px black,
-            -1px 1px 0 {shadow_color},
-            1px 1px 0 {shadow_color},
-            1px -1px 0 {shadow_color},
-            -1px -1px 0 {shadow_color};
-    """
-
-    title_style = """
-        color: #fff;
-        font-weight: 900;
-        word-spacing: 10px;
-        letter-spacing: 3px;
-        text-shadow:
-            0 0 1px black,
-            0 0 2px black,
-            0 0 4px black;
-    """
-
-    fig = go.Figure(
-        data=[
-            go.Sankey(
-                node=dict(
-                    pad=30,
-                    thickness=20,
-                    line=dict(color="#000000", width=1),
-                    customdata=node_labels,
-                    hovertemplate="%{customdata}<extra></extra>",
-                    label=[f"<span style='{label_style}'>{s}</span>" for s in label],
-                    color=node_palette,
-                ),
-                link=dict(
-                    source=source,
-                    target=target,
-                    line=dict(color="#909090", width=1),
-                    value=value,
-                    color=link_palette,
-                    customdata=link_labels,
-                    hovertemplate="%{customdata} <extra></extra>",
-                ),
+        if self.exclude:
+            exclude_mask = pd.concat([(data == i).any(axis=1) for i in self.exclude], axis=1).any(
+                axis=1
             )
-        ]
-    )
+            data = data[~exclude_mask]
 
-    fig.update_layout(
-        title_text=f"<span style='{title_style}'>{title}</span>" if title else None,
-        font_size=16,
-        title_x=0.5,
-        paper_bgcolor="rgba(0, 0, 0, 0)",
-    )
+        if self.max_classes is not None:
+            class_counts = data.melt().value.value_counts()
+            keep_classes = class_counts[: self.max_classes].index.tolist()
+            data = data[data.isin(keep_classes).all(axis=1)]
 
-    return fig
+        return self.generate_dataframe(data)
+
+    def generate_plot_parameters(self, df: pd.DataFrame) -> SankeyParameters:
+        """Generate Sankey plot parameters from a formatted, cleaned dataframe"""
+        # Assign a unique, sequential ID to each year-class combo, regardless of source/target
+        # assignment. The order of the IDs determines the plotting order (top to bottom).
+        all_classes = pd.DataFrame(
+            {
+                "year": pd.concat([df.source_year, df.target_year]),
+                "class": pd.concat([df.source, df.target]),
+            }
+        )
+
+        def sort_func(classes: pd.Series) -> pd.Series:
+            return classes.apply(lambda c: df[df.source.eq(c)].total.mean())
+
+        # Sort the class-year combos by the total samples so that IDs will be assigned from largest
+        # to smallest, which determines the sankey plot order
+        all_classes = all_classes.sort_values(by=["class"], key=sort_func, ascending=False)
+
+        all_classes["id"] = all_classes.groupby(["year", "class"], sort=False).ngroup()
+        all_classes = all_classes.drop_duplicates().reset_index(drop=True)
+        all_classes["label"] = all_classes["class"].apply(lambda k: self.labels[k]).tolist()
+        all_classes["color"] = all_classes["class"].apply(lambda k: self.palette[k]).tolist()
+
+        # Join the sequential class-year IDs to the dataframe
+        df["source_id"] = pd.merge(
+            left=df,
+            right=all_classes,
+            how="left",
+            left_on=["source_year", "source"],
+            right_on=["year", "class"],
+        )["id"]
+        df["target_id"] = pd.merge(
+            left=df,
+            right=all_classes,
+            how="left",
+            left_on=["target_year", "target"],
+            right_on=["year", "class"],
+        )["id"]
+
+        return SankeyParameters(
+            node_labels=all_classes.year,
+            link_labels=df.link_label,
+            node_palette=all_classes.color,
+            link_palette=df.source_color,
+            label=all_classes.label,
+            source=df.source_id,
+            target=df.target_id,
+            value=df.changed,
+        )
+
+    def generate_dataframe(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Convert raw sampling data to a formatted dataframe"""
+        permutations = []
+        # Get all unique class-year combinations
+        for source, target in utils.pairwise(data.columns):
+            permutations += list(
+                zip([source] * len(data), [target] * len(data), data[source], data[target])
+            )
+        df = pd.DataFrame(permutations, columns=["source_year", "target_year", "source", "target"])
+
+        # Count the unique combinations of all four fields
+        df = (
+            df.groupby(["source_year", "target_year", "source", "target"])
+            .size()
+            .reset_index()
+            .rename(columns={0: "changed"})
+        )
+        # Count the total number of source samples in each year
+        df["total"] = df.groupby(["source_year", "source"]).changed.transform(sum)
+        # Calculate what percent of the source samples went into each target class
+        df["proportion"] = df["changed"] / df["total"]
+
+        # Join the class labels and colors to the class IDs
+        df["source_label"] = df.source.apply(lambda k: self.labels[k])
+        df["target_label"] = df.target.apply(lambda k: self.labels[k])
+        df["source_color"] = df.source.apply(lambda k: self.palette[k])
+        df["target_color"] = df.target.apply(lambda k: self.palette[k])
+
+        def build_link_label(row: pd.Series) -> str:
+            # Early exit in case all classes are excluded
+            if row.shape[0] == 0:
+                return ""
+
+            verb = "remained" if row.source == row.target else "became"
+            return f"{row.proportion:.0%} of {row.source_label} {verb} {row.target_label}"
+
+        # Describe the class changes
+        df["link_label"] = df.apply(build_link_label, axis=1)
+
+        return df
+
+    @staticmethod
+    def drop_small_classes(data: pd.DataFrame, keep_classes: int) -> pd.DataFrame:
+        """Remove small classes until a maximum number of classes is reached."""
+        class_order = (
+            data.groupby("target")
+            .sum()
+            .sort_values(by="changed", ascending=False)
+            .reset_index()
+            .target
+        )
+        keep = class_order[:keep_classes]
+
+        return data[data.target.isin(keep) & data.source.isin(keep)]
+
+    @property
+    def _view_name(self):
+        """When the Sankey object is displayed by IPython, render the plot"""
+        return self.gui._view_name
+
+    @property
+    def _model_id(self):
+        """When the Sankey object is displayed by IPython, render the plot"""
+        return self.gui._model_id
+
+    def update_layout(self, *args, **kwargs):
+        """Pass layout changes to the plot. This is primarily kept for compatibility with geemap."""
+        self.plot.update_layout(*args, **kwargs)
+
+    def generate_gui(self):
+        BUTTON_HEIGHT = "24px"
+        BUTTON_WIDTH = "24px"
+
+        unique_classes = self.get_all_classes()
+        max_classes = max(len(unique_classes), 2)
+
+        classes_slider = widgets.IntSlider(
+            value=0, description="Min size:", min=0, max=max_classes - 2, step=1, readout=False
+        )
+
+        def update_max_classes(change):
+            self.max_classes = max_classes - change["new"]
+            update_plot()
+
+        classes_slider.observe(update_max_classes, names="value")
+
+        def toggle_button(button):
+            button.toggle()
+
+            class_name = button.tooltip
+            class_id = [key for key in self.labels.keys() if self.labels[key] == class_name][0]
+
+            if not button.state:
+                self.exclude.append(class_id)
+            # A button can be disabled without being excluded if the only connecting class is
+            # excluded
+            elif class_id in self.exclude:
+                self.exclude.remove(class_id)
+
+            update_plot()
+
+        def update_plot():
+            """Swap new data into the plot"""
+            new_plot = self.generate_plot()
+            self.plot.data[0].link = new_plot.data[0].link
+            self.plot.data[0].node = new_plot.data[0].node
+
+            # Turn off buttons if class isn't visible
+            for button in buttons:
+                button.disabled = button.state and not any(
+                    [button.tooltip in label for label in self.plot.data[0].node.label]
+                )
+
+        buttons = []
+        for i in unique_classes:
+            label = self.labels[i]
+            on_color = self.palette[i]
+            state = i in self.get_active_classes()
+
+            button = utils.ColorToggleButton(tooltip=label, on_color=on_color, state=state)
+            button.layout.width = BUTTON_WIDTH
+            button.layout.height = BUTTON_HEIGHT
+
+            button.on_click(toggle_button)
+            buttons.append(button)
+
+        def reset_plot(change):
+            classes_slider.value = 0
+
+            for button in buttons:
+                if not button.state:
+                    button.click()
+
+        reset_button = widgets.Button(
+            icon="refresh",
+            tooltip="Reset plot",
+            layout=widgets.Layout(height=BUTTON_HEIGHT, width=BUTTON_WIDTH, padding="0 0 0 3px"),
+        )
+        reset_button.on_click(reset_plot)
+
+        open_button = widgets.Button(
+            icon="external-link",
+            tooltip="Open in new tab",
+            layout=widgets.Layout(height=BUTTON_HEIGHT, width=BUTTON_WIDTH, padding="0 0 0 3px"),
+        )
+        open_button.on_click(lambda _: self.plot.show(renderer="browser"))
+
+        button_box = widgets.HBox([*buttons, widgets.Label("|"), reset_button, open_button])
+
+        gui = widgets.VBox(
+            [
+                self.plot,
+                widgets.VBox(
+                    [button_box, classes_slider], layout=widgets.Layout(align_items="center")
+                ),
+            ]
+        )
+
+        return gui
+
+    def generate_plot(self) -> go.Figure:
+        df = self.generate_filtered_dataframe()
+        params = self.generate_plot_parameters(df)
+
+        shadow_color = "#76777a"
+        label_style = f"""
+            color: #fff;
+            font-weight: 600;
+            letter-spacing: -1px;
+            text-shadow:
+                0 0 4px black,
+                -1px 1px 0 {shadow_color},
+                1px 1px 0 {shadow_color},
+                1px -1px 0 {shadow_color},
+                -1px -1px 0 {shadow_color};
+        """
+
+        title_style = """
+            color: #fff;
+            font-weight: 900;
+            word-spacing: 10px;
+            letter-spacing: 3px;
+            text-shadow:
+                0 0 1px black,
+                0 0 2px black,
+                0 0 4px black;
+        """
+
+        fig = go.Figure(
+            data=[
+                go.Sankey(
+                    node=dict(
+                        pad=30,
+                        thickness=20,
+                        line=dict(color="#000000", width=1),
+                        customdata=params.node_labels,
+                        hovertemplate="%{customdata}<extra></extra>",
+                        label=[f"<span style='{label_style}'>{s}</span>" for s in params.label],
+                        color=params.node_palette,
+                    ),
+                    link=dict(
+                        source=params.source,
+                        target=params.target,
+                        line=dict(color="#909090", width=1),
+                        value=params.value,
+                        color=params.link_palette,
+                        customdata=params.link_labels,
+                        hovertemplate="%{customdata} <extra></extra>",
+                    ),
+                )
+            ]
+        )
+
+        fig.update_layout(
+            title_text=f"<span style='{title_style}'>{self.title}</span>" if self.title else None,
+            font_size=16,
+            title_x=0.5,
+            paper_bgcolor="rgba(0, 0, 0, 0)",
+        )
+
+        return go.FigureWidget(fig)
