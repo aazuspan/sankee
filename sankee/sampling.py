@@ -13,6 +13,7 @@ def collect_sankey_data(
     n: int = 500,
     scale: Union[None, int] = None,
     seed: int = 0,
+    include: Union[None, List[int]] = None,
 ) -> pd.DataFrame:
     """Collect all the data needed to generate a Sankey diagram from a list of images.
 
@@ -26,7 +27,6 @@ def collect_sankey_data(
         band=band,
         scale=scale,
     )
-
     try:
         data = pd.DataFrame.from_dict(
             [feat["properties"] for feat in samples.toList(samples.size()).getInfo()]
@@ -43,6 +43,9 @@ def collect_sankey_data(
                 f"Valid samples were not found for image `{image}`. Check that the"
                 " image overlaps the sampling region."
             )
+
+    if include is not None:
+        data = data[data.isin(include).all(axis=1)]
 
     return data
 
