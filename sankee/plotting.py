@@ -1,6 +1,6 @@
 import sys
 from collections import namedtuple
-from typing import Any, Dict, List, Union
+from typing import Dict, List, Union
 
 import ee
 import ipywidgets as widgets
@@ -37,8 +37,6 @@ def sankify(
     title: Union[None, str] = None,
     scale: Union[None, int] = None,
     seed: int = 0,
-    dataset: Any = None,
-    exclude: None = None,
 ) -> go.Figure:
     """
     Generate an interactive Sankey plot showing land cover change over time from a series of images.
@@ -77,12 +75,6 @@ def sankify(
         use the image's nominal scale, which may cause errors depending on the image projection.
     seed : int, default 0
         The seed value used to generate repeatable results during random sampling.
-    dataset : None
-        Unused parameter that will be removed in a future release. If you have a Dataset object to
-        sankify, use `Dataset.sankify` instead.
-    exclude : None
-        Unused parameter that will be removed in a future release. To exclude a class, omit it from
-        the labels.
 
     Returns
     -------
@@ -96,12 +88,6 @@ def sankify(
             "Your versions of `geemap` and `sankee` are incompatible. Please update geemap to the "
             "latest version (pip install -U geemap)."
         ) from None
-
-    if dataset is not None:
-        raise ValueError(
-            "`sankee.sankify` no longer supports a `dataset` parameter. Use "
-            "`Dataset.sankify` instead."
-        )
 
     if region is None:
         region = image_list[0].geometry()
