@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Union
 
 import ee
 import ipywidgets as widgets
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -33,13 +32,13 @@ def sankify(
     palette: Dict[int, str],
     region: Union[None, ee.Geometry] = None,
     label_list: Union[None, List[str]] = None,
-    exclude: Union[None, List[int]] = None,
     max_classes: Union[None, int] = None,
     n: int = 500,
     title: Union[None, str] = None,
     scale: Union[None, int] = None,
     seed: int = 0,
     dataset: Any = None,
+    exclude: None = None,
 ) -> go.Figure:
     """
     Generate an interactive Sankey plot showing land cover change over time from a series of images.
@@ -53,11 +52,10 @@ def sankify(
     band : str
         The name of the band in all images of image_list that contains classified data.
     labels : dict
-        The labels associated with each value of all images in image_list. Every value in the images
-        must be included as a key in the labels dictionary.
+        The labels associated with each value of all images in image_list. Any values not defined
+        in the labels will be dropped from the sampled data.
     palette : dict
-        The colors associated with each value of all images in image_list. Every value in the images
-        must be included as a key in the palette dictionary.
+        The colors associated with each value of all images in image_list.
     region : ee.Geometry, default None
         A region to generate samples within. The region must overlap all images. If none is
         provided, the geometry of the first image will be used. For this to work, images must be
@@ -66,10 +64,6 @@ def sankify(
         An ordered list of labels corresponding to the images. The list must be the same length as
         image_list. If none is provided, sequential numeric labels will be automatically assigned
         starting at 0. Labels are displayed on-hover on the Sankey nodes.
-    exclude : list[int], default None
-        An optional list of pixel values to exclude from the plot. Excluded values must be raw pixel
-        values rather than class labels. This can be helpful if the region is dominated by one or
-        more unchanging classes and the goal is to visualize changes in smaller classes.
     max_classes : int, default None
         If a value is provided, small classes will be removed until max_classes remain. Class size
         is calculated based on total times sampled in the time series.
@@ -86,6 +80,9 @@ def sankify(
     dataset : None
         Unused parameter that will be removed in a future release. If you have a Dataset object to
         sankify, use `Dataset.sankify` instead.
+    exclude : None
+        Unused parameter that will be removed in a future release. To exclude a class, omit it from
+        the labels.
 
     Returns
     -------
@@ -124,33 +121,16 @@ def sankify(
         n=n,
         scale=scale,
         seed=seed,
+        include=list(labels.keys()),
     )
-    check_data_is_compatible(labels, sample_data)
 
     return SankeyPlot(
         data=sample_data,
         labels=labels,
         palette=palette,
         title=title,
-        exclude=exclude,
         max_classes=max_classes,
     )
-
-
-def check_data_is_compatible(labels: Dict[int, str], data: pd.DataFrame) -> None:
-    """Check for values that are present in data and are not present in labels and raise an error if
-    any are found.
-    """
-    missing_keys = []
-
-    for _, col in data.iteritems():
-        missing_keys += utils.get_missing_keys(col, labels)
-
-    if missing_keys:
-        raise Exception(
-            "The following values are present in the data and undefined in the labels and palette:"
-            f" {np.unique(missing_keys)}"
-        )
 
 
 class SankeyPlot(widgets.DOMWidget):
@@ -160,7 +140,6 @@ class SankeyPlot(widgets.DOMWidget):
         labels: Dict[int, str],
         palette: Dict[int, str],
         title: str,
-        exclude: List[int] = None,
         max_classes: int = None,
     ):
         self.data = data
@@ -168,8 +147,8 @@ class SankeyPlot(widgets.DOMWidget):
         self.palette = palette
         self.title = title
 
-        self.exclude = exclude if exclude is not None else []
         self.max_classes = max_classes
+        self.hide = []
 
         self.dataframe = self.generate_dataframe(data)
         self.plot = self.generate_plot()
@@ -189,11 +168,9 @@ class SankeyPlot(widgets.DOMWidget):
         """Apply filtering to the sample data, recalculating values like class percentages."""
         data = self.data.copy()
 
-        if self.exclude:
-            exclude_mask = pd.concat([(data == i).any(axis=1) for i in self.exclude], axis=1).any(
-                axis=1
-            )
-            data = data[~exclude_mask]
+        if self.hide:
+            hide_mask = pd.concat([(data == i).any(axis=1) for i in self.hide], axis=1).any(axis=1)
+            data = data[~hide_mask]
 
         if self.max_classes is not None:
             class_counts = data.melt().value.value_counts()
@@ -345,11 +322,11 @@ class SankeyPlot(widgets.DOMWidget):
             class_id = [key for key in self.labels.keys() if self.labels[key] == class_name][0]
 
             if not button.state:
-                self.exclude.append(class_id)
-            # A button can be disabled without being excluded if the only connecting class is
-            # excluded
-            elif class_id in self.exclude:
-                self.exclude.remove(class_id)
+                self.hide.append(class_id)
+            # A button can be disabled without being hidden if the only connecting class is
+            # hidden
+            elif class_id in self.hide:
+                self.hide.remove(class_id)
 
             update_plot()
 
