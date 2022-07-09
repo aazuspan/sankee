@@ -63,7 +63,8 @@ def test_get_year_LCMAP():
     dataset = sankee.datasets.LCMAP
     img = dataset.get_year(2016)
     assert (
-        img.get("system:id") == "projects/sat-io/open-datasets/LCMAP/LCPRI/LCMAP_CU_2020_V12_LCPRI"
+        img.get("system:id").getInfo()
+        == "projects/sat-io/open-datasets/LCMAP/LCPRI/LCMAP_CU_2016_V12_LCPRI"
     )
     assert img.bandNames().getInfo() == [dataset.band]
 
