@@ -34,7 +34,7 @@ class Dataset:
         years : List[int]
             All years available in this dataset.
         nodata : int
-            An optional no-data value to automatically exclude when sankifying.
+            An optional no-data value to automatically remove when plotting.
         """
         self.name = name
         self.id = id
@@ -68,14 +68,29 @@ class Dataset:
         return ee.ImageCollection(self.id)
 
     def get_year(self, year: int) -> ee.Image:
-        """Get one year's image from the dataset."""
+        """Get one year's image from the dataset. Set the metadata properties for visualization."""
         if year not in self.years:
             raise ValueError(
                 f"This dataset does not include year `{year}`. Choose from {self.years}."
             )
 
         img = self.collection.filterDate(str(year), str(year + 1)).first()
+        img = self.set_visualization_properties(img)
+
+        if self.nodata is not None:
+            img = img.updateMask(img.neq(self.nodata))
+
         return img.select(self.band)
+
+    def set_visualization_properties(self, image: ee.Image) -> ee.Image:
+        """Set the properties used by Earth Engine to automatically assign a palette to an image
+        from this dataset."""
+        return image.set(
+            f"{self.band}_class_values",
+            list(self.labels.keys()),
+            f"{self.band}_class_palette",
+            [c.replace("#", "") for c in self.palette.values()],
+        )
 
     def list_years(self) -> ee.List:
         """Get an ee.List of all years in the collection."""
@@ -160,10 +175,7 @@ class LCMS_Dataset(Dataset):
     def get_year(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. LCMS splits up each year into two images: CONUS
         and SEAK. This merges those into a single image."""
-        if year not in self.years:
-            raise ValueError(
-                f"This dataset does not include year `{year}`. Choose from {self.years}."
-            )
+        super().get_year(year)
 
         collection = self.collection.filter(ee.Filter.eq("year", year))
         merged = collection.mosaic().select(self.band).clip(collection.geometry())
@@ -175,25 +187,29 @@ class LCMS_Dataset(Dataset):
         return merged
 
 
-class MODIS_Dataset(Dataset):
+class CCAP_Dataset(Dataset):
     def get_year(self, year: int) -> ee.Image:
-        """Get one year's image from the dataset. Explicitly set the class value and palette
-        metadata to allow automatic visualization."""
-        img = super().get_year(year)
-        img = img.set("LC_Type1_class_values", list(MODIS_LC_TYPE1.labels.keys()))
-        img = img.set(
-            "LC_Type1_class_palette", [c.replace("#", "") for c in MODIS_LC_TYPE1.palette.values()]
-        )
-        img = img.set("LC_Type2_class_values", list(MODIS_LC_TYPE2.labels.keys()))
-        img = img.set(
-            "LC_Type2_class_palette", [c.replace("#", "") for c in MODIS_LC_TYPE2.palette.values()]
-        )
-        img = img.set("LC_Type3_class_values", list(MODIS_LC_TYPE3.labels.keys()))
-        img = img.set(
-            "LC_Type3_class_palette", [c.replace("#", "") for c in MODIS_LC_TYPE3.palette.values()]
+        """Get one year's image from the dataset. C-CAP splits up each year into multiple images,
+        so merge those and set the class value and palette metadata to allow automatic
+        visualization."""
+        super().get_year(year)
+
+        imgs = self.collection.filterDate(str(year), str(year + 1))
+
+        img = (
+            imgs.mosaic()
+            .set(
+                {
+                    "system:time_start": imgs.first().get("system:time_start"),
+                    "system:time_end": imgs.first().get("system:time_end"),
+                }
+            )
+            .clip(imgs.geometry())
         )
 
-        return img.select(self.band)
+        img = self.set_visualization_properties(img)
+
+        return img
 
 
 LCMS_LU = LCMS_Dataset(
@@ -218,7 +234,7 @@ LCMS_LU = LCMS_Dataset(
         6: "#c2b34a",
         7: "#1B1716",
     },
-    years=list(range(1985, 2022)),
+    years=tuple(range(1985, 2022)),
     nodata=7,
 )
 
@@ -261,7 +277,7 @@ LCMS_LC = LCMS_Dataset(
         14: "#4780f3",
         15: "#1B1716",
     },
-    years=list(range(1985, 2022)),
+    years=tuple(range(1985, 2022)),
     nodata=15,
 )
 
@@ -315,14 +331,14 @@ NLCD = Dataset(
         90: "#b8d9eb",
         95: "#6c9fb8",
     },
-    years=[2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019],
+    years=(2001, 2004, 2006, 2008, 2011, 2013, 2016, 2019),
     nodata=1,
 )
 
 # Kept for backwards compatibility with older `geemap` versions
 NLCD2016 = NLCD
 
-MODIS_LC_TYPE1 = MODIS_Dataset(
+MODIS_LC_TYPE1 = Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 1",
     id="MODIS/006/MCD12Q1",
     band="LC_Type1",
@@ -364,11 +380,11 @@ MODIS_LC_TYPE1 = MODIS_Dataset(
         16: "#f9ffa4",
         17: "#1c0dff",
     },
-    years=list(range(2001, 2021)),
+    years=tuple(range(2001, 2021)),
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
-MODIS_LC_TYPE2 = MODIS_Dataset(
+MODIS_LC_TYPE2 = Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 2",
     id="MODIS/006/MCD12Q1",
     band="LC_Type2",
@@ -408,11 +424,11 @@ MODIS_LC_TYPE2 = MODIS_Dataset(
         14: "#ff6d4c",
         15: "#f9ffa4",
     },
-    years=list(range(2001, 2021)),
+    years=tuple(range(2001, 2021)),
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
-MODIS_LC_TYPE3 = MODIS_Dataset(
+MODIS_LC_TYPE3 = Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 3",
     id="MODIS/006/MCD12Q1",
     band="LC_Type3",
@@ -442,7 +458,7 @@ MODIS_LC_TYPE3 = MODIS_Dataset(
         9: "#f9ffa4",
         10: "#a5a5a5",
     },
-    years=list(range(2001, 2021)),
+    years=tuple(range(2001, 2021)),
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_Landcover_100m_Proba-V-C3_Global
@@ -500,9 +516,112 @@ CGLS_LC100 = Dataset(
         126: "#648C00",
         200: "#000080",
     },
-    years=list(range(2015, 2020)),
+    years=tuple(range(2015, 2020)),
     nodata=0,
 )
+
+# https://samapriya.github.io/awesome-gee-community-datasets/projects/ccap_mlc/
+CCAP_LC30 = CCAP_Dataset(
+    name="C-CAP - NOAA Coastal Change Analysis Program 30m",
+    id="projects/sat-io/open-datasets/NOAA/ccap_30m",
+    band="b1",
+    labels={
+        1: "Unclassified (Cloud,Shadow etc)",
+        2: "Impervious",
+        3: "Developed Open Space",
+        4: "Developed Open Space",
+        5: "Developed Open Space",
+        6: "Cultivated Land",
+        7: "Pasture/Hay",
+        8: "Grassland/Herbaceous",
+        9: "Deciduous Forest",
+        10: "Evergreen Forest",
+        11: "Mixed Forest",
+        12: "Scrub/Shrub",
+        13: "Palustrine Forested Wetland",
+        14: "Palustrine Scrub/Shrub Wetland",
+        15: "Palustrine Emergent Wetland",
+        16: "Estuarine Forested Wetland",
+        17: "Estuarine Scrub/Shrub Wetland",
+        18: "Estuarine Emergent Wetland",
+        19: "Unconsolidated Shore",
+        20: "Bare Land",
+        21: "Open Water",
+        22: "Palustrine Aquatic Bed",
+        23: "Estuarine Aquatic Bed",
+        24: "Tundra",
+        25: "Snow/Ice",
+    },
+    palette={
+        1: "#000000",
+        2: "#f2f2f2",
+        3: "#a899a8",
+        4: "#8e757c",
+        5: "#c1cc38",
+        6: "#542100",
+        7: "#c1a04f",
+        8: "#f2ba87",
+        9: "#00f200",
+        10: "#003a00",
+        11: "#07a03a",
+        12: "#6d6d00",
+        13: "#005b5b",
+        14: "#f26d00",
+        15: "#f200f2",
+        16: "#3d003d",
+        17: "#6d006d",
+        18: "#af00af",
+        19: "#00f2f2",
+        20: "#f2f200",
+        21: "#000077",
+        22: "#0000f2",
+        23: "#161616",
+        24: "#161616",
+        25: "#191919",
+    },
+    years=(1975, 1985, 1992, 1996, 2001, 2006, 2010, 2016),
+    nodata=1,
+)
+
+# https://samapriya.github.io/awesome-gee-community-datasets/projects/ca_lc/
+CA_FOREST_LC = Dataset(
+    name="Canada Forested Ecosystem Land Cover",
+    id="projects/sat-io/open-datasets/CA_FOREST_LC_VLCE2",
+    band="b1",
+    labels={
+        0: "Unclassified",
+        20: "Water",
+        31: "Snow/Ice",
+        32: "Rock/Rubble",
+        33: "Exposed/Barren land",
+        40: "Bryoids",
+        50: "Shrubs",
+        80: "Wetland",
+        81: "Wetland-treed",
+        100: "Herbs",
+        210: "Coniferous",
+        220: "Broadleaf",
+        230: "Mixedwood",
+    },
+    palette={
+        0: "#686868",
+        20: "#3333ff",
+        31: "#ccffff",
+        32: "#cccccc",
+        33: "#996633",
+        40: "#ffccff",
+        50: "#ffff00",
+        80: "#993399",
+        81: "#9933cc",
+        100: "#ccff33",
+        210: "#006600",
+        220: "#00cc00",
+        230: "#cc9900",
+    },
+    years=tuple(range(1984, 2020)),
+    nodata=0,
+)
+
 
 datasets = [
     LCMS_LC,
@@ -512,4 +631,6 @@ datasets = [
     MODIS_LC_TYPE2,
     MODIS_LC_TYPE3,
     CGLS_LC100,
+    CCAP_LC30,
+    CA_FOREST_LC,
 ]
