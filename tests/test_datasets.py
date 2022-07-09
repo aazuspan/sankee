@@ -69,6 +69,15 @@ def test_get_year_LCMAP():
     assert img.bandNames().getInfo() == [dataset.band]
 
 
+def test_get_year_CORINE():
+    dataset = sankee.datasets.CORINE
+    img = dataset.get_year(2011)
+    # CORINE year ranges are confusing. The asset with the 2011 start
+    # date is named 2012.
+    assert img.get("system:id").getInfo() == "COPERNICUS/CORINE/V20/100m/2012"
+    assert img.bandNames().getInfo() == [dataset.band]
+
+
 def test_years():
     for dataset in sankee.datasets.datasets:
         assert dataset.years == tuple(dataset.list_years().getInfo())
