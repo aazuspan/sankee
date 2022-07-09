@@ -1,8 +1,6 @@
-import colorsys
 import itertools
 
 import ipywidgets as widgets
-import matplotlib.colors as mc
 
 
 def get_missing_keys(key_list, key_dict):
@@ -23,17 +21,6 @@ def pairwise(iterable):
     return zip(a, b)
 
 
-def adjust_lightness(color, amount=0.5):
-    c = colorsys.rgb_to_hls(*mc.to_rgb(color))
-    scaled = colorsys.hls_to_rgb(c[0], max(0, min(1, 1 - amount * c[1])), c[2])
-    return rgb_to_hex(scaled)
-
-
-def rgb_to_hex(rgb):
-    rgb = [int(c * 255) for c in rgb]
-    return "#%02x%02x%02x" % tuple(rgb)
-
-
 class ColorToggleButton(widgets.Button):
     """
     The ipywidgets.ToggleButton doesn't support a `button_color` style, so this turns a standard
@@ -44,13 +31,16 @@ class ColorToggleButton(widgets.Button):
         super().__init__(*args, **kwargs)
         self.state = state
         self.on_color = on_color
-        self.off_color = off_color if off_color is not None else adjust_lightness(on_color, 0.12)
-
-        current_color = on_color if state else off_color
+        # Set an alpha value for the default off color
+        self.off_color = off_color if off_color is not None else f"{on_color}20"
+        current_color = on_color if state else self.off_color
         self.style.button_color = current_color
+        self.layout.border = f"1px dashed {self.on_color}"
 
     def toggle(self):
         self.state = not self.state
-        color = self.on_color if self.state else self.off_color
+        self.update()
 
+    def update(self):
+        color = self.on_color if self.state else self.off_color
         self.style.button_color = color
