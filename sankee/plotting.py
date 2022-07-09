@@ -245,7 +245,8 @@ class SankeyPlot(widgets.DOMWidget):
                 return ""
 
             verb = "remained" if row.source == row.target else "became"
-            return f"{row.proportion:.0%} of {row.source_label} {verb} {row.target_label}"
+            pct = f"{row.proportion:.0%}"
+            return f"<b>{pct}</b> of <b>{row.source_label}</b> {verb} <b>{row.target_label}</b>"
 
         # Describe the class changes
         df["link_label"] = df.apply(build_link_label, axis=1)
@@ -368,10 +369,10 @@ class SankeyPlot(widgets.DOMWidget):
                 go.Sankey(
                     node=dict(
                         pad=30,
-                        thickness=20,
-                        line=dict(color="#000000", width=1),
+                        thickness=10,
+                        line=dict(color="#505050", width=1.5),
                         customdata=params.node_labels,
-                        hovertemplate="%{customdata}<extra></extra>",
+                        hovertemplate="<b>%{customdata}</b><extra></extra>",
                         label=[f"<span style='{label_style}'>{s}</span>" for s in params.label],
                         color=params.node_palette,
                     ),
