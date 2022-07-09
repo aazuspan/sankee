@@ -136,57 +136,50 @@ class SankeyPlot(widgets.DOMWidget):
         self.max_classes = max_classes
         self.hide = []
 
-        self.dataframe = self.generate_dataframe(data)
         self.plot = self.generate_plot()
         self.gui = self.generate_gui()
 
+    def get_sorted_classes(self) -> pd.Series:
+        """Return all unique class values, sorted by the total number of observations."""
+        df = self.generate_dataframe()
+        start_count = (
+            df.groupby("source")
+            .mean()
+            .reset_index()[["source", "total"]]
+            .rename(columns={"source": "class", "total": "count"})
+        )
+        end_count = (
+            df.groupby("target")
+            .sum()
+            .reset_index()[["target", "changed"]]
+            .rename(columns={"target": "class", "changed": "count"})
+        )
+        total_count = pd.concat([start_count, end_count]).groupby("class").sum().reset_index()
+
+        return total_count.sort_values(by="count", ascending=False)["class"].reset_index(drop=True)
+
     def get_active_classes(self) -> pd.Series:
         """Return all unique active, visibile class values after filtering."""
-        df = self.generate_filtered_dataframe()
+        df = self.generate_dataframe()
 
         return df[["source", "target"]].melt().value.unique()
 
-    def get_all_classes(self) -> pd.Series:
-        """Return all unique class values before any filtering."""
-        return self.dataframe[["source", "target"]].melt().value.unique()
-
-    def generate_filtered_dataframe(self) -> pd.DataFrame:
-        """Apply filtering to the sample data, recalculating values like class percentages."""
-        data = self.data.copy()
-
-        if self.hide:
-            hide_mask = pd.concat([(data == i).any(axis=1) for i in self.hide], axis=1).any(axis=1)
-            data = data[~hide_mask]
-
-        if self.max_classes is not None:
-            class_counts = data.melt().value.value_counts()
-            keep_classes = class_counts[: self.max_classes].index.tolist()
-            data = data[data.isin(keep_classes).all(axis=1)]
-
-        return self.generate_dataframe(data)
-
-    def generate_plot_parameters(self, df: pd.DataFrame) -> SankeyParameters:
+    def generate_plot_parameters(self) -> SankeyParameters:
         """Generate Sankey plot parameters from a formatted, cleaned dataframe"""
-        # Assign a unique, sequential ID to each year-class combo, regardless of source/target
-        # assignment. The order of the IDs determines the plotting order (top to bottom).
-        all_classes = pd.DataFrame(
-            {
-                "year": pd.concat([df.source_year, df.target_year]),
-                "class": pd.concat([df.source, df.target]),
-            }
+        df = self.generate_dataframe()
+
+        source_df = df[["source", "source_year"]].rename(
+            columns={"source": "class", "source_year": "year"}
         )
+        target_df = df[["target", "target_year"]].rename(
+            columns={"target": "class", "target_year": "year"}
+        )
+        all_classes = pd.concat([source_df, target_df])
 
-        def sort_func(classes: pd.Series) -> pd.Series:
-            return classes.apply(lambda c: df[df.source.eq(c)].total.mean())
-
-        # Sort the class-year combos by the total samples so that IDs will be assigned from largest
-        # to smallest, which determines the sankey plot order
-        all_classes = all_classes.sort_values(by=["class"], key=sort_func, ascending=False)
-
-        all_classes["id"] = all_classes.groupby(["year", "class"], sort=False).ngroup()
         all_classes = all_classes.drop_duplicates().reset_index(drop=True)
         all_classes["label"] = all_classes["class"].apply(lambda k: self.labels[k]).tolist()
         all_classes["color"] = all_classes["class"].apply(lambda k: self.palette[k]).tolist()
+        all_classes["id"] = all_classes.groupby(["year", "class"], sort=False).ngroup()
 
         # Join the sequential class-year IDs to the dataframe
         df["source_id"] = pd.merge(
@@ -215,8 +208,19 @@ class SankeyPlot(widgets.DOMWidget):
             value=df.changed,
         )
 
-    def generate_dataframe(self, data: pd.DataFrame) -> pd.DataFrame:
+    def generate_dataframe(self) -> pd.DataFrame:
         """Convert raw sampling data to a formatted dataframe"""
+        data = self.data.copy()
+
+        if self.hide:
+            hide_mask = pd.concat([(data == i).any(axis=1) for i in self.hide], axis=1).any(axis=1)
+            data = data[~hide_mask]
+
+        if self.max_classes is not None:
+            class_counts = data.melt().value.value_counts()
+            keep_classes = class_counts[: self.max_classes].index.tolist()
+            data = data[data.isin(keep_classes).all(axis=1)]
+
         permutations = []
         # Get all unique class-year combinations
         for source, target in utils.pairwise(data.columns):
@@ -256,20 +260,6 @@ class SankeyPlot(widgets.DOMWidget):
 
         return df
 
-    @staticmethod
-    def drop_small_classes(data: pd.DataFrame, keep_classes: int) -> pd.DataFrame:
-        """Remove small classes until a maximum number of classes is reached."""
-        class_order = (
-            data.groupby("target")
-            .sum()
-            .sort_values(by="changed", ascending=False)
-            .reset_index()
-            .target
-        )
-        keep = class_order[:keep_classes]
-
-        return data[data.target.isin(keep) & data.source.isin(keep)]
-
     @property
     def _view_name(self):
         """When the Sankey object is displayed by IPython, render the plot"""
@@ -288,18 +278,7 @@ class SankeyPlot(widgets.DOMWidget):
         BUTTON_HEIGHT = "24px"
         BUTTON_WIDTH = "24px"
 
-        unique_classes = self.get_all_classes()
-        max_classes = max(len(unique_classes), 2)
-
-        classes_slider = widgets.IntSlider(
-            value=0, description="Min size:", min=0, max=max_classes - 2, step=1, readout=False
-        )
-
-        def update_max_classes(change):
-            self.max_classes = max_classes - change["new"]
-            update_plot()
-
-        classes_slider.observe(update_max_classes, names="value")
+        unique_classes = self.get_sorted_classes()
 
         def toggle_button(button):
             button.toggle()
@@ -309,9 +288,7 @@ class SankeyPlot(widgets.DOMWidget):
 
             if not button.state:
                 self.hide.append(class_id)
-            # A button can be disabled without being hidden if the only connecting class is
-            # hidden
-            elif class_id in self.hide:
+            else:
                 self.hide.remove(class_id)
 
             update_plot()
@@ -321,12 +298,6 @@ class SankeyPlot(widgets.DOMWidget):
             new_plot = self.generate_plot()
             self.plot.data[0].link = new_plot.data[0].link
             self.plot.data[0].node = new_plot.data[0].node
-
-            # Turn off buttons if class isn't visible
-            for button in buttons:
-                button.disabled = button.state and not any(
-                    [button.tooltip in label for label in self.plot.data[0].node.label]
-                )
 
         buttons = []
         for i in unique_classes:
@@ -342,8 +313,6 @@ class SankeyPlot(widgets.DOMWidget):
             buttons.append(button)
 
         def reset_plot(change):
-            classes_slider.value = 0
-
             for button in buttons:
                 if not button.state:
                     button.click()
@@ -360,24 +329,23 @@ class SankeyPlot(widgets.DOMWidget):
             tooltip="Open in new tab",
             layout=widgets.Layout(height=BUTTON_HEIGHT, width=BUTTON_WIDTH, padding="0 0 0 3px"),
         )
-        open_button.on_click(lambda _: self.plot.show(renderer="browser"))
+        open_button.on_click(
+            lambda _: self.plot.update_layout(width=None, height=None).show(renderer="browser")
+        )
 
         button_box = widgets.HBox([*buttons, widgets.Label("|"), reset_button, open_button])
 
         gui = widgets.VBox(
             [
                 self.plot,
-                widgets.VBox(
-                    [button_box, classes_slider], layout=widgets.Layout(align_items="center")
-                ),
+                widgets.VBox([button_box], layout=widgets.Layout(align_items="center")),
             ]
         )
 
         return gui
 
     def generate_plot(self) -> go.Figure:
-        df = self.generate_filtered_dataframe()
-        params = self.generate_plot_parameters(df)
+        params = self.generate_plot_parameters()
 
         shadow_color = "#76777a"
         label_style = f"""
