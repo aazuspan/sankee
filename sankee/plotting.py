@@ -108,6 +108,7 @@ def sankify(
         scale=scale,
         seed=seed,
         include=list(labels.keys()),
+        max_classes=max_classes,
     )
 
     return SankeyPlot(
@@ -115,7 +116,6 @@ def sankify(
         labels=labels,
         palette=palette,
         title=title,
-        max_classes=max_classes,
     )
 
 
@@ -126,16 +126,13 @@ class SankeyPlot(widgets.DOMWidget):
         labels: Dict[int, str],
         palette: Dict[int, str],
         title: str,
-        max_classes: int = None,
     ):
         self.data = data
         self.labels = labels
         self.palette = palette
         self.title = title
 
-        self.max_classes = max_classes
         self.hide = []
-
         self.plot = self.generate_plot()
         self.gui = self.generate_gui()
 
@@ -215,11 +212,6 @@ class SankeyPlot(widgets.DOMWidget):
         if self.hide:
             hide_mask = pd.concat([(data == i).any(axis=1) for i in self.hide], axis=1).any(axis=1)
             data = data[~hide_mask]
-
-        if self.max_classes is not None:
-            class_counts = data.melt().value.value_counts()
-            keep_classes = class_counts[: self.max_classes].index.tolist()
-            data = data[data.isin(keep_classes).all(axis=1)]
 
         permutations = []
         # Get all unique class-year combinations

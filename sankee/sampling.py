@@ -14,6 +14,7 @@ def collect_sankey_data(
     scale: Union[None, int] = None,
     seed: int = 0,
     include: Union[None, List[int]] = None,
+    max_classes: Union[None, int] = None,
 ) -> pd.DataFrame:
     """Collect all the data needed to generate a Sankey diagram from a list of images.
 
@@ -46,6 +47,11 @@ def collect_sankey_data(
 
     if include is not None:
         data = data[data.isin(include).all(axis=1)]
+
+    if max_classes is not None:
+        class_counts = data.melt().value.value_counts()
+        keep_classes = class_counts[:max_classes].index.tolist()
+        data = data[data.isin(keep_classes).all(axis=1)]
 
     return data
 
