@@ -622,6 +622,33 @@ CA_FOREST_LC = Dataset(
     nodata=0,
 )
 
+LCMAP = Dataset(
+    name="LCMAP - Landscape Change Monitoring, Assessment, and Projection",
+    id="projects/sat-io/open-datasets/LCMAP/LCPRI",
+    band="b1",
+    labels={
+        1: "Developed",
+        2: "Cropland",
+        3: "Grass/Shrub",
+        4: "Tree Cover",
+        5: "Water",
+        6: "Wetland",
+        7: "Ice/Snow",
+        8: "Barren",
+    },
+    palette={
+        1: "#E60000",
+        2: "#A87000",
+        3: "#E3E3C2",
+        4: "#1D6330",
+        5: "#476BA1",
+        6: "#BAD9EB",
+        7: "#FFFFFF",
+        8: "#B3B0A3",
+    },
+    years=tuple(range(1985, 2021)),
+)
+
 
 datasets = [
     LCMS_LC,
@@ -633,4 +660,5 @@ datasets = [
     CGLS_LC100,
     CCAP_LC30,
     CA_FOREST_LC,
+    LCMAP,
 ]

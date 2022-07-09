@@ -59,6 +59,15 @@ def test_get_year_CA_FOREST():
     assert img.bandNames().getInfo() == [dataset.band]
 
 
+def test_get_year_LCMAP():
+    dataset = sankee.datasets.LCMAP
+    img = dataset.get_year(2016)
+    assert (
+        img.get("system:id") == "projects/sat-io/open-datasets/LCMAP/LCPRI/LCMAP_CU_2020_V12_LCPRI"
+    )
+    assert img.bandNames().getInfo() == [dataset.band]
+
+
 def test_years():
     for dataset in sankee.datasets.datasets:
         assert dataset.years == tuple(dataset.list_years().getInfo())
