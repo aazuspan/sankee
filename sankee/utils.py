@@ -1,19 +1,6 @@
-import pandas as pd
+import itertools
 
-
-def feature_collection_to_dataframe(fc):
-    """
-    Extract and return FeatureCollection properties as a Pandas dataframe.
-    """
-    return pd.DataFrame.from_dict([feat["properties"] for feat in fc.toList(fc.size()).getInfo()])
-
-
-def normalized_change(data, group_col, count_col):
-    """
-    Perform group-wise data normalization to a column of values. Output values will be the
-    proportion of all values in the group.
-    """
-    return data.groupby(group_col)[count_col].apply(lambda x: x / x.sum())
+import ipywidgets as widgets
 
 
 def get_missing_keys(key_list, key_dict):
@@ -24,28 +11,36 @@ def get_missing_keys(key_list, key_dict):
     return [key for key in key_list if key not in key_dict.keys()]
 
 
-def drop_small_classes(data: pd.DataFrame, keep_classes: int) -> pd.DataFrame:
+def pairwise(iterable):
+    """Polyfill itertools.pairwise for pre 3.10.
+
+    https://docs.python.org/3/library/itertools.html#itertools.pairwise
     """
-    Remove small classes until a maximum number of classes is reached.
+    a, b = itertools.tee(iterable)
+    next(b, None)
+    return zip(a, b)
 
-    Parameters
-    ----------
-    data : pd.DataFrame
-        A dataframe in which each row represents as single sample point and columns represent the
-        class at each point in time.
-    keep_classes : int
-        The maximum number of classes to keep. If more classes are present, the smallest will be
-        removed.
 
-    Returns
-    -------
-    pd.DataFrame
-        A dataframe with rows that belong to the largest classes.
+class ColorToggleButton(widgets.Button):
     """
-    class_counts = data.melt().groupby("value").size().reset_index(name="n")
-    largest_classes = (
-        class_counts.sort_values(by="n", ascending=False).value[:keep_classes].tolist()
-    )
-    dropped_data = data[data.isin(largest_classes).all(axis=1)]
+    The ipywidgets.ToggleButton doesn't support a `button_color` style, so this turns a standard
+    ipywidgets.Button into a toggle button.
+    """
 
-    return dropped_data
+    def __init__(self, *args, on_color, off_color=None, state=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.state = state
+        self.on_color = on_color
+        # Set an alpha value for the default off color
+        self.off_color = off_color if off_color is not None else f"{on_color}20"
+        current_color = on_color if state else self.off_color
+        self.style.button_color = current_color
+        self.layout.border = f"1px dashed {self.on_color}"
+
+    def toggle(self):
+        self.state = not self.state
+        self.update()
+
+    def update(self):
+        color = self.on_color if self.state else self.off_color
+        self.style.button_color = color

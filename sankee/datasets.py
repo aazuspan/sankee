@@ -4,7 +4,7 @@ import ee
 import pandas as pd
 import plotly.graph_objects as go
 
-from sankee.core import sankify
+from sankee.plotting import sankify
 
 
 class Dataset:
@@ -104,12 +104,12 @@ class Dataset:
         self,
         years: List[int],
         region: ee.Geometry,
-        exclude: Union[List[int], None] = None,
         max_classes: Union[None, int] = None,
         n: int = 500,
         title: Union[str, None] = None,
         scale: Union[int, None] = None,
         seed: int = 0,
+        exclude: None = None,
     ) -> go.Figure:
         """
         Generate an interactive Sankey plot showing land cover change over time from a series of
@@ -140,6 +140,8 @@ class Dataset:
             projection.
         seed : int, default 0
             The seed value used to generate repeatable results during random sampling.
+        exclude : None
+            Unused parameter that will be removed in a future release.
 
         Returns
         -------
@@ -153,16 +155,20 @@ class Dataset:
         years = sorted(years)
 
         imgs = [self.get_year(year) for year in years]
-        exclude = exclude if exclude is not None else []
-        exclude = exclude + [self.nodata] if self.nodata is not None else exclude
+
+        labels = self.labels.copy()
+        palette = self.palette.copy()
+        if self.nodata is not None:
+            labels.pop(self.nodata)
+            palette.pop(self.nodata)
+
         return sankify(
             image_list=imgs,
             label_list=years,
-            labels=self.labels,
+            labels=labels,
             band=self.band,
-            palette=self.palette,
+            palette=palette,
             region=region,
-            exclude=exclude,
             max_classes=max_classes,
             n=n,
             title=title,
