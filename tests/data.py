@@ -3,8 +3,6 @@ import pandas as pd
 
 import sankee
 
-ee.Initialize()
-
 TEST_DATASET = sankee.datasets.LCMS_LU
 TEST_IMAGE_LIST = [
     TEST_DATASET.get_year(1985),

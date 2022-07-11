@@ -5,8 +5,6 @@ import sankee.sampling
 
 from .data import TEST_DATASET, TEST_IMAGE_LABELS, TEST_IMAGE_LIST, TEST_REGION
 
-ee.Initialize()
-
 
 def test_collect_sankey_data():
     """Test that the correct number of rows and columns are sampled."""

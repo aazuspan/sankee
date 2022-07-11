@@ -1,9 +1,11 @@
 import ee
 import pytest
+from numpy.testing import assert_equal
+from pandas.testing import assert_series_equal
 
 import sankee
 
-ee.Initialize()
+from .data import TEST_REGION
 
 
 def test_get_year_nlcd():
@@ -94,3 +96,38 @@ def test_get_invalid_years():
         sankee.datasets.LCMS_LU.sankify(years=[2017], region=None)
     with pytest.raises(ValueError, match="Duplicate years"):
         sankee.datasets.LCMS_LU.sankify(years=[2017, 2017, 2018], region=None)
+
+
+def test_sankify():
+    """Make sure that sankify returns the same results whether called directly or from a Dataset."""
+    dataset = sankee.datasets.LCMS_LC
+    sankey1 = dataset.sankify(years=[1985, 2010], region=TEST_REGION, n=10, title="My plot!")
+
+    img_list = [
+        dataset.get_year(1985),
+        dataset.get_year(2010),
+    ]
+    sankey2 = sankee.sankify(
+        image_list=img_list,
+        label_list=["1985", "2010"],
+        band=dataset.band,
+        region=TEST_REGION,
+        n=10,
+        labels=dataset.labels,
+        palette=dataset.palette,
+        title="My plot!",
+    )
+
+    params1 = sankey1.generate_plot_parameters()
+    params2 = sankey2.generate_plot_parameters()
+
+    for p1, p2 in zip(params1, params2):
+        assert_series_equal(p1, p2)
+
+    plot_data1 = sankey1.plot.data[0]
+    plot_data2 = sankey2.plot.data[0]
+    # Remove the unique IDs before testing equality
+    plot_data1.pop("uid")
+    plot_data2.pop("uid")
+
+    assert_equal(plot_data1, plot_data2)
