@@ -3,6 +3,8 @@ from typing import List, Union
 import ee
 import pandas as pd
 
+from sankee import utils
+
 
 def collect_sankey_data(
     *,
@@ -29,14 +31,19 @@ def collect_sankey_data(
         scale=scale,
     )
     try:
-        data = pd.DataFrame.from_dict(
-            [feat["properties"] for feat in samples.toList(samples.size()).getInfo()]
-        ).dropna()
+        features = [feat["properties"] for feat in samples.toList(samples.size()).getInfo()]
     except ee.EEException as e:
         if band in str(e):
-            raise ValueError(f"The band `{band}` was not found in all images.") from None
+            shared_bands = utils.get_shared_bands(image_list)
+            raise ValueError(
+                f"The band `{band}` was not found in all images. Choose from " f"{shared_bands}"
+            ) from None
+        elif "'count' must be positive" in str(e) and region.getInfo().get("type") == "Point":
+            raise ValueError("The `region` must be a 2D geometry, not a Point.") from None
         else:
             raise e
+
+    data = pd.DataFrame.from_dict(features).dropna()
 
     for image in image_labels:
         if image not in data.columns:

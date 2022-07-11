@@ -1,14 +1,9 @@
 import itertools
+from collections import Counter
+from typing import List
 
+import ee
 import ipywidgets as widgets
-
-
-def get_missing_keys(key_list, key_dict):
-    """
-    Find any keys that are present in a list that are not present in the keys of a dictionary.
-    Helpful for testing if a label or palette dictionary is fully defined.
-    """
-    return [key for key in key_list if key not in key_dict.keys()]
 
 
 def pairwise(iterable):
@@ -19,6 +14,19 @@ def pairwise(iterable):
     a, b = itertools.tee(iterable)
     next(b, None)
     return zip(a, b)
+
+
+def get_shared_bands(images: List[ee.Image]) -> List[str]:
+    """Get the list of bands that are shared by all images in the list.
+
+    Args:
+        img_list: List of ee.Image objects.
+
+    Returns:
+        List of band names.
+    """
+    band_counts = Counter(itertools.chain(*[img.bandNames().getInfo() for img in images]))
+    return [band for band, count in band_counts.items() if count == len(images)]
 
 
 class ColorToggleButton(widgets.Button):

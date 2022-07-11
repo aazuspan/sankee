@@ -46,3 +46,15 @@ def test_collect_sankey_data_bad_region():
             band=TEST_DATASET.band,
             n=10,
         )
+
+
+def test_collect_sankey_data_point():
+    """Test that an error is thrown when sampling a point."""
+    with pytest.raises(ValueError, match="must be a 2D geometry"):
+        sankee.sampling.collect_sankey_data(
+            image_list=TEST_IMAGE_LIST,
+            image_labels=TEST_IMAGE_LABELS,
+            region=ee.Geometry.Point(0, 0),
+            band=TEST_DATASET.band,
+            n=10,
+        )
