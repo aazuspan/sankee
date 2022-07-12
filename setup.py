@@ -7,6 +7,34 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
+requirements = [
+    "earthengine-api>=0.1.230",
+    "numpy",
+    "pandas",
+    "plotly>=5.2.2",
+    "ipywidgets",
+]
+doc_requirements = ["nbsphinx", "sphinx", "sphinx_rtd_theme"]
+test_requirements = ["pytest", "coverage", "pytest-cov"]
+dev_requirements = (
+    [
+        "pre-commit",
+        "mypy",
+        "black",
+        "isort",
+        "bumpversion",
+        "twine",
+    ]
+    + doc_requirements
+    + test_requirements
+)
+
+extras_requirements = {
+    "doc": doc_requirements,
+    "dev": dev_requirements,
+    "test": test_requirements,
+}
+
 
 setup(
     name="sankee",
@@ -30,13 +58,9 @@ setup(
     keywords="sankey land cover visualization",
     packages=find_packages(include=["sankee", "sankee."]),
     python_requires=">=3.6",
-    install_requires=[
-        "earthengine-api>=0.1.230",
-        "numpy",
-        "pandas",
-        "plotly>=5.2.2",
-        "ipywidgets",
-    ],
+    install_requires=requirements,
+    tests_require=test_requirements,
+    extras_require=extras_requirements,
     project_urls={
         "Bug Reports": "https://github.com/aazuspan/sankee/issues",
         "Source": "https://github.com/aazuspan/sankee/",
