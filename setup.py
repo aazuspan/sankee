@@ -15,7 +15,7 @@ requirements = [
     "ipywidgets",
 ]
 doc_requirements = ["nbsphinx", "sphinx", "sphinx_rtd_theme"]
-test_requirements = ["pytest", "coverage", "pytest-cov"]
+test_requirements = ["pytest", "coverage", "pytest-cov", "httplib2"]
 dev_requirements = (
     [
         "pre-commit",

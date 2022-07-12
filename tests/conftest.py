@@ -1,3 +1,4 @@
 import ee
+import httpllib2
 
-ee.Initialize()
+ee.Initialize(http_transport=httplib2.Http())
