@@ -43,7 +43,7 @@ def collect_sankey_data(
         else:
             raise e
 
-    data = pd.DataFrame.from_dict(features).dropna()
+    data = pd.DataFrame.from_dict(features).dropna().astype(int)
 
     for image in image_labels:
         if image not in data.columns:
