@@ -45,3 +45,10 @@ run-hooks: ## Run pre-commit hooks on staged files
 
 run-hooks-all: ## Run pre-commit hooks on all files
 	pre-commit run --all-files
+	
+coverage: ## Run unit tests and produce a coverage HTML
+	coverage run -m pytest .
+	coverage html
+
+view-coverage: ## Open coverage HTML in a browser
+	python -m webbrowser -t htmlcov/index.html
