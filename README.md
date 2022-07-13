@@ -5,6 +5,7 @@
 [![conda-forge link](https://img.shields.io/conda/vn/conda-forge/sankee)](https://anaconda.org/conda-forge/sankee)
 [![conda-forge link](https://img.shields.io/pypi/v/sankee)](https://pypi.org/project/sankee)
 [![Testing workflow](https://github.com/aazuspan/sankee/actions/workflows/test.yml/badge.svg)](https://github.com/aazuspan/sankee/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/aazuspan/sankee/branch/main/graph/badge.svg?token=39REP2HZQC)](https://codecov.io/gh/aazuspan/sankee)
 [![Read the Docs](https://readthedocs.org/projects/sankee/badge/?version=latest&style=flat)](https://sankee.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://pepy.tech/badge/sankee)](https://pepy.tech/project/sankee)
 
