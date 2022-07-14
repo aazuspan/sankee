@@ -364,7 +364,7 @@ class SankeyPlot(widgets.DOMWidget):
                 0 0 4px black;
         """
 
-        fig = go.Figure(
+        fig = go.FigureWidget(
             data=[
                 go.Sankey(
                     node=dict(
@@ -396,4 +396,4 @@ class SankeyPlot(widgets.DOMWidget):
             paper_bgcolor="rgba(0, 0, 0, 0)",
         )
 
-        return go.FigureWidget(fig)
+        return fig
