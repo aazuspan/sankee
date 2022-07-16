@@ -211,6 +211,7 @@ class CCAP_Dataset(Dataset):
                 }
             )
             .clip(imgs.geometry())
+            .setDefaultProjection("EPSG:5070")
         )
 
         img = self.set_visualization_properties(img)
