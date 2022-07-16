@@ -1,4 +1,3 @@
-import sys
 from collections import namedtuple
 from typing import Dict, List, Union
 
@@ -80,14 +79,6 @@ def sankify(
     plotly.graph_objs._figure.Figure
         An interactive Sankey plot.
     """
-    # Older versions of geemap are incompatible with sankee v0.1.0 and pass the wrong positional
-    # arguments.
-    if isinstance(band, ee.Geometry) and "geemap" in sys.modules:
-        raise ValueError(
-            "Your versions of `geemap` and `sankee` are incompatible. Please update geemap to the "
-            "latest version (pip install -U geemap)."
-        ) from None
-
     if region is None:
         region = image_list[0].geometry()
 
