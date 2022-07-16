@@ -7,8 +7,7 @@ import ipywidgets as widgets
 import pandas as pd
 import plotly.graph_objects as go
 
-from sankee import utils
-from sankee.sampling import collect_sankey_data
+from sankee import sampling, utils
 
 SankeyParameters = namedtuple(
     "SankeyParameters",
@@ -99,23 +98,23 @@ def sankify(
     if len(set(label_list)) != len(label_list):
         raise ValueError("All labels in the `label_list` must be unique.")
 
-    sample_data = collect_sankey_data(
+    data, samples = sampling.generate_sample_data(
         image_list=image_list,
         image_labels=label_list,
-        region=region,
         band=band,
-        n=n,
         scale=scale,
-        seed=seed,
         include=list(labels.keys()),
         max_classes=max_classes,
+        region=region,
+        n=n,
     )
 
     return SankeyPlot(
-        data=sample_data,
+        data=data,
         labels=labels,
         palette=palette,
         title=title,
+        samples=samples,
     )
 
 
@@ -126,11 +125,13 @@ class SankeyPlot(widgets.DOMWidget):
         labels: Dict[int, str],
         palette: Dict[int, str],
         title: str,
+        samples: ee.FeatureCollection,
     ):
         self.data = data
         self.labels = labels
         self.palette = palette
         self.title = title
+        self.samples = samples
 
         self.hide = []
         self.plot = self.generate_plot()
