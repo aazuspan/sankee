@@ -19,6 +19,7 @@ def sankey():
         labels=TEST_DATASET.labels,
         palette=TEST_DATASET.palette,
         title="",
+        samples=None,
     )
 
 

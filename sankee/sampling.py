@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Tuple, Union
 
 import ee
 import pandas as pd
@@ -6,7 +6,7 @@ import pandas as pd
 from sankee import utils
 
 
-def collect_sankey_data(
+def generate_sample_data(
     *,
     image_list: List[ee.Image],
     image_labels: List[str],
@@ -17,19 +17,24 @@ def collect_sankey_data(
     seed: int = 0,
     include: Union[None, List[int]] = None,
     max_classes: Union[None, int] = None,
-) -> pd.DataFrame:
-    """Collect all the data needed to generate a Sankey diagram from a list of images.
-
-    The resulting dataframe has one column for each image and one row for each sample point.
+) -> Tuple[pd.DataFrame, ee.FeatureCollection]:
+    """Take a list of images extract image values to each to random points. The image values will be
+    stored in a property based on the image label. Then, the samples will be returned as a formated
+    dataframe with one column for each image and one row for each sample point.
     """
+
+    def extract_values_at_point(pt):
+        for img, label in zip(image_list, image_labels):
+            cover = img.reduceRegion(
+                reducer=ee.Reducer.first(), geometry=pt.geometry(), scale=scale
+            ).get(band)
+            pt = ee.Feature(pt).set(label, cover)
+
+        return pt
+
     points = ee.FeatureCollection.randomPoints(region=region, points=n, seed=seed)
-    samples = _extract_values(
-        image_list=image_list,
-        image_labels=image_labels,
-        sample_points=points,
-        band=band,
-        scale=scale,
-    )
+    samples = points.map(extract_values_at_point)
+
     try:
         features = [feat["properties"] for feat in samples.toList(samples.size()).getInfo()]
     except ee.EEException as e:
@@ -38,8 +43,8 @@ def collect_sankey_data(
             raise ValueError(
                 f"The band `{band}` was not found in all images. Choose from " f"{shared_bands}"
             ) from None
-        elif "'count' must be positive" in str(e) and region.getInfo().get("type") == "Point":
-            raise ValueError("The `region` must be a 2D geometry, not a Point.") from None
+        elif "'count' must be positive" in str(e):
+            raise ValueError("No points were sampled. Make sure to pass a 2D `region`.") from None
         else:
             raise e
 
@@ -60,28 +65,4 @@ def collect_sankey_data(
         keep_classes = class_counts[:max_classes].index.tolist()
         data = data[data.isin(keep_classes).all(axis=1)]
 
-    return data
-
-
-def _extract_values(
-    *,
-    image_list: List[ee.Image],
-    image_labels: List[str],
-    sample_points: ee.FeatureCollection,
-    band: str,
-    scale: int,
-) -> ee.FeatureCollection:
-    """Take a list of images and a collection of sample points and extract image values to each
-    sample point. The image values will be stored in a property based on the image label.
-    """
-
-    def extract_values_at_point(pt):
-        for img, label in zip(image_list, image_labels):
-            cover = img.reduceRegion(
-                reducer=ee.Reducer.first(), geometry=pt.geometry(), scale=scale
-            ).get(band)
-            pt = ee.Feature(pt).set(label, cover)
-
-        return pt
-
-    return sample_points.map(extract_values_at_point)
+    return data, samples
