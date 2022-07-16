@@ -98,6 +98,7 @@ def sankify(
         max_classes=max_classes,
         region=region,
         n=n,
+        seed=seed,
     )
 
     return SankeyPlot(
