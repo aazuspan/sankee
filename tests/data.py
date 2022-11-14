@@ -8,7 +8,8 @@ TEST_IMAGE_LIST = [
     TEST_DATASET.get_year(1985),
     TEST_DATASET.get_year(2010),
 ]
-TEST_IMAGE_LABELS = ["1985", "2010"]
+# Use labels that don't sort alpha to ensure order stays correct
+TEST_IMAGE_LABELS = ["Start (1985)", "End (2010)"]
 TEST_REGION = ee.Geometry.Point([-122.192688, 46.25917]).buffer(1000)
 
 TEST_DATA = pd.DataFrame(

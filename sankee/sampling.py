@@ -57,6 +57,10 @@ def generate_sample_data(
                 " image overlaps the sampling region."
             )
 
+    # EE data gets sorted alpha, so re-sort columns to the image order. Run this after the column
+    # check because this can add columns that were missing.
+    data = data.reindex(image_labels, axis=1)
+    
     if include is not None:
         data = data[data.isin(include).all(axis=1)]
 
