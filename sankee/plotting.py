@@ -134,20 +134,21 @@ class SankeyPlot(widgets.DOMWidget):
         self.label_type = label_type
 
         self.hide = []
+        # Initialized by `self.generate_plot`
+        self.df = None
         self.plot = self.generate_plot()
         self.gui = self.generate_gui()
 
     def get_sorted_classes(self) -> pd.Series:
         """Return all unique class values, sorted by the total number of observations."""
-        df = self.generate_dataframe()
         start_count = (
-            df.groupby("source")
+            self.df.groupby("source")
             .mean()
             .reset_index()[["source", "total"]]
             .rename(columns={"source": "class", "total": "count"})
         )
         end_count = (
-            df.groupby("target")
+            self.df.groupby("target")
             .sum()
             .reset_index()[["target", "changed"]]
             .rename(columns={"target": "class", "changed": "count"})
@@ -158,13 +159,11 @@ class SankeyPlot(widgets.DOMWidget):
 
     def get_active_classes(self) -> pd.Series:
         """Return all unique active, visibile class values after filtering."""
-        df = self.generate_dataframe()
-
-        return df[["source", "target"]].melt().value.unique()
+        return self.df[["source", "target"]].melt().value.unique()
 
     def generate_plot_parameters(self) -> SankeyParameters:
         """Generate Sankey plot parameters from a formatted, cleaned dataframe"""
-        df = self.generate_dataframe()
+        df = self.df.copy()
 
         source_df = df[["source", "source_year"]].rename(
             columns={"source": "class", "source_year": "year"}
@@ -312,10 +311,11 @@ class SankeyPlot(widgets.DOMWidget):
             self.plot.data[0].node = new_plot.data[0].node
 
         buttons = []
+        active_classes = self.get_active_classes()
         for i in unique_classes:
             label = self.labels[i]
             on_color = self.palette[i]
-            state = i in self.get_active_classes()
+            state = i in active_classes
 
             button = utils.ColorToggleButton(tooltip=label, on_color=on_color, state=state)
             button.layout.width = BUTTON_WIDTH
@@ -324,7 +324,7 @@ class SankeyPlot(widgets.DOMWidget):
             button.on_click(toggle_button)
             buttons.append(button)
 
-        def reset_plot(change):
+        def reset_plot(_):
             for button in buttons:
                 if not button.state:
                     button.click()
@@ -357,6 +357,7 @@ class SankeyPlot(widgets.DOMWidget):
         return gui
 
     def generate_plot(self) -> go.Figure:
+        self.df = self.generate_dataframe()
         params = self.generate_plot_parameters()
 
         shadow_color = "#76777a"
