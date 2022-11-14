@@ -20,6 +20,7 @@ def sankey():
         palette=TEST_DATASET.palette,
         title="",
         samples=None,
+        label_type="class",
     )
 
 
