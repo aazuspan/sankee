@@ -38,7 +38,7 @@ extras_requirements = {
 
 setup(
     name="sankee",
-    version="0.2.0",
+    version="0.2.1",
     description="Visualize classified time series data with interactive Sankey plots in Google Earth Engine.",
     long_description=long_description,
     long_description_content_type="text/markdown",
