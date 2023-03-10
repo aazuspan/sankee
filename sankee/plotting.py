@@ -35,7 +35,7 @@ def sankify(
     title: Union[None, str] = None,
     scale: Union[None, int] = None,
     seed: int = 0,
-    label_type: str = "class",
+    label_type: Union[None, str] = "class",
 ) -> go.Figure:
     """
     Generate an interactive Sankey plot showing land cover change over time from a series of images.
@@ -75,9 +75,9 @@ def sankify(
     seed : int, default 0
         The seed value used to generate repeatable results during random sampling.
     label_type : str, default "class"
-        The type of label to display for each link, one of "class", "percent", or "count". Selecting
+        The type of label to display for each link, one of "class", "percent", "count", or False. Selecting
         "class" will use the class label, "percent" will use the proportion of sampled pixels in each
-        class, and "count" will use the number of sampled pixels in each class.
+        class, and "count" will use the number of sampled pixels in each class. False will disable link labels.
 
     Returns
     -------
@@ -209,8 +209,10 @@ class SankeyPlot(widgets.DOMWidget):
             all_classes["label"] = all_classes["proportion_of_total"]
         elif self.label_type == "count":
             all_classes["label"] = all_classes["count"]
+        elif not self.label_type:
+            all_classes["label"] = ""
         else:
-            raise ValueError("Invalid label_type. Choose from 'class', 'percent', or 'count'.")
+            raise ValueError("Invalid label_type. Choose from 'class', 'percent', 'count', or False.")
 
         return SankeyParameters(
             node_labels=all_classes.year,
