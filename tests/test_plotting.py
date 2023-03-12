@@ -21,6 +21,7 @@ def sankey():
         title="",
         samples=None,
         label_type="class",
+        theme="default",
     )
 
 
