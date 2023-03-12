@@ -4,6 +4,7 @@ import ee
 import pandas as pd
 import plotly.graph_objects as go
 
+from sankee import themes
 from sankee.plotting import sankify
 
 
@@ -111,6 +112,7 @@ class Dataset:
         seed: int = 0,
         exclude: None = None,
         label_type: str = "class",
+        theme: Union[str, themes.Theme] = themes.DEFAULT,
     ) -> go.Figure:
         """
         Generate an interactive Sankey plot showing land cover change over time from a series of
@@ -144,9 +146,10 @@ class Dataset:
         exclude : None
             Unused parameter that will be removed in a future release.
         label_type : str, default "class"
-            The type of label to display for each link, one of "class", "percent", or "count". Selecting
-            "class" will use the class label, "percent" will use the proportion of sampled pixels in each
-            class, and "count" will use the number of sampled pixels in each class.
+            The type of label to display for each link, one of "class", "percent", or "count".
+            Selecting "class" will use the class label, "percent" will use the proportion of
+            sampled pixels in each class, and "count" will use the number of sampled pixels in each
+            class.
 
         Returns
         -------
@@ -180,6 +183,7 @@ class Dataset:
             scale=scale,
             seed=seed,
             label_type=label_type,
+            theme=theme,
         )
 
 

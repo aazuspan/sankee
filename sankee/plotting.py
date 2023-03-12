@@ -6,7 +6,7 @@ import ipywidgets as widgets
 import pandas as pd
 import plotly.graph_objects as go
 
-from sankee import sampling, utils
+from sankee import sampling, themes, utils
 
 SankeyParameters = namedtuple(
     "SankeyParameters",
@@ -36,6 +36,7 @@ def sankify(
     scale: Union[None, int] = None,
     seed: int = 0,
     label_type: Union[None, str] = "class",
+    theme: Union[str, themes.Theme] = themes.DEFAULT,
 ) -> go.Figure:
     """
     Generate an interactive Sankey plot showing land cover change over time from a series of images.
@@ -75,9 +76,13 @@ def sankify(
     seed : int, default 0
         The seed value used to generate repeatable results during random sampling.
     label_type : str, default "class"
-        The type of label to display for each link, one of "class", "percent", "count", or False. Selecting
-        "class" will use the class label, "percent" will use the proportion of sampled pixels in each
-        class, and "count" will use the number of sampled pixels in each class. False will disable link labels.
+        The type of label to display for each link, one of "class", "percent", "count", or False.
+        Selecting "class" will use the class label, "percent" will use the proportion of sampled
+        pixels in each class, and "count" will use the number of sampled pixels in each class.
+        False will disable link labels.
+    theme : str or themes.Theme
+        The theme to apply to the Sankey diagram. Can be the name of a built-in theme (e.g. "d3") or
+        a custom `sankee.themes.Theme` object.
 
     Returns
     -------
@@ -113,6 +118,7 @@ def sankify(
         title=title,
         samples=samples,
         label_type=label_type,
+        theme=theme,
     )
 
 
@@ -125,6 +131,7 @@ class SankeyPlot(widgets.DOMWidget):
         title: str,
         samples: ee.FeatureCollection,
         label_type: str,
+        theme: Union[str, themes.Theme],
     ):
         self.data = data
         self.labels = labels
@@ -132,6 +139,7 @@ class SankeyPlot(widgets.DOMWidget):
         self.title = title
         self.samples = samples
         self.label_type = label_type
+        self.theme = theme
 
         self.hide = []
         # Initialized by `self.generate_plot`
@@ -196,12 +204,14 @@ class SankeyPlot(widgets.DOMWidget):
         # Calculate the proportion of each class in each year
         melted = self.data.melt(var_name="year")
         melted = melted.groupby(["year", "value"]).size().reset_index(name="count")
-        melted["proportion_of_total"] = (melted
-            .groupby("year")["count"]
+        melted["proportion_of_total"] = (
+            melted.groupby("year")["count"]
             .transform(lambda x: x / x.sum())
             .apply(lambda x: f"{x:.0%}")
         )
-        all_classes = all_classes.merge(melted, left_on=["year", "class"], right_on=["year", "value"])
+        all_classes = all_classes.merge(
+            melted, left_on=["year", "class"], right_on=["year", "value"]
+        )
 
         if self.label_type == "class":
             all_classes["label"] = all_classes["class"].apply(lambda k: self.labels[k])
@@ -212,7 +222,9 @@ class SankeyPlot(widgets.DOMWidget):
         elif not self.label_type:
             all_classes["label"] = ""
         else:
-            raise ValueError("Invalid label_type. Choose from 'class', 'percent', 'count', or False.")
+            raise ValueError(
+                "Invalid label_type. Choose from 'class', 'percent', 'count', or False."
+            )
 
         return SankeyParameters(
             node_labels=all_classes.year,
@@ -362,58 +374,39 @@ class SankeyPlot(widgets.DOMWidget):
         self.df = self.generate_dataframe()
         params = self.generate_plot_parameters()
 
-        shadow_color = "#76777a"
-        label_style = f"""
-            color: #fff;
-            font-weight: 600;
-            letter-spacing: -1px;
-            text-shadow:
-                0 0 4px black,
-                -1px 1px 0 {shadow_color},
-                1px 1px 0 {shadow_color},
-                1px -1px 0 {shadow_color},
-                -1px -1px 0 {shadow_color};
-        """
+        theme = (
+            self.theme if isinstance(self.theme, themes.Theme) else themes.load_theme(self.theme)
+        )
 
-        title_style = """
-            color: #fff;
-            font-weight: 900;
-            word-spacing: 10px;
-            letter-spacing: 3px;
-            text-shadow:
-                0 0 1px black,
-                0 0 2px black,
-                0 0 4px black;
-        """
+        node_kwargs = dict(
+            customdata=params.node_labels,
+            hovertemplate="<b>%{customdata}</b><extra></extra>",
+            label=[f"<span style='{theme.label_style}'>{s}</span>" for s in params.label],
+            color=params.node_palette,
+        )
+        link_kwargs = dict(
+            source=params.source,
+            target=params.target,
+            value=params.value,
+            color=params.link_palette,
+            customdata=params.link_labels,
+            hovertemplate="%{customdata} <extra></extra>",
+        )
 
         fig = go.FigureWidget(
             data=[
                 go.Sankey(
                     arrangement="snap",
-                    node=dict(
-                        pad=30,
-                        thickness=10,
-                        line=dict(color="#505050", width=1.5),
-                        customdata=params.node_labels,
-                        hovertemplate="<b>%{customdata}</b><extra></extra>",
-                        label=[f"<span style='{label_style}'>{s}</span>" for s in params.label],
-                        color=params.node_palette,
-                    ),
-                    link=dict(
-                        source=params.source,
-                        target=params.target,
-                        line=dict(color="#909090", width=1),
-                        value=params.value,
-                        color=params.link_palette,
-                        customdata=params.link_labels,
-                        hovertemplate="%{customdata} <extra></extra>",
-                    ),
+                    node={**node_kwargs, **theme.node_kwargs},
+                    link={**link_kwargs, **theme.link_kwargs},
                 )
             ]
         )
 
         fig.update_layout(
-            title_text=f"<span style='{title_style}'>{self.title}</span>" if self.title else None,
+            title_text=f"<span style='{theme.title_style}'>{self.title}</span>"
+            if self.title
+            else None,
             font_size=16,
             title_x=0.5,
             paper_bgcolor="rgba(0, 0, 0, 0)",
