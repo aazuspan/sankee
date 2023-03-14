@@ -76,3 +76,5 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 
 autodoc_mock_imports = ["ee", "pandas", "numpy", "plotly"]
+
+fail_on_warning = True
