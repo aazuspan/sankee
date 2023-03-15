@@ -2,6 +2,55 @@ from typing import Dict, Union
 
 
 class Theme:
+    """
+    Attributes
+    ----------
+    label_style : str, optional
+        CSS style for the node labels.
+    title_style : str, optional
+        CSS style for the figure title.
+    node_kwargs : dict, optional
+        Keyword arguments applied to Sankey nodes. See the `Plotly Sankey.node documentation
+        <https://plotly.com/python/reference/sankey/#sankey-node>`_ for details.
+    link_kwargs : dict, optional
+        Keyword arguments applied to Sankey links. See the `Plotly Sankey.link documentation
+        <https://plotly.com/python/reference/sankey/#sankey-link>`_ for details.
+
+    Examples
+    --------
+    >>> theme = Theme(
+    ...     label_style=\"""
+    ...         color: #fff;
+    ...         font-weight: 600;
+    ...         letter-spacing: -1px;
+    ...         text-shadow:
+    ...             0 0 4px black,
+    ...             -1px 1px 0 #76777a,
+    ...             1px 1px 0 #76777a,
+    ...             1px -1px 0 #76777a,
+    ...             -1px -1px 0 #76777a;
+    ...     \""",
+    ...     title_style=\"""
+    ...         color: #fff;
+    ...         font-weight: 900;
+    ...         word-spacing: 10px;
+    ...         letter-spacing: 3px;
+    ...         text-shadow:
+    ...             0 0 1px black,
+    ...             0 0 2px black,
+    ...             0 0 4px black;
+    ...     \""",
+    ...     node_kwargs=dict(
+    ...         pad=30,
+    ...         thickness=10,
+    ...         line=dict(color="#505050", width=1.5),
+    ...     ),
+    ...     link_kwargs=dict(
+    ...         line=dict(color="#909090", width=1),
+    ...     ),
+    ... )
+    """
+
     def __init__(
         self,
         label_style: Union[None, str] = None,
@@ -9,6 +58,7 @@ class Theme:
         node_kwargs: Union[None, Dict] = None,
         link_kwargs: Union[None, Dict] = None,
     ):
+
         self.label_style = label_style
         self.title_style = title_style
         self.node_kwargs = node_kwargs if node_kwargs is not None else {}

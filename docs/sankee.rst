@@ -137,3 +137,12 @@ scenes, acquired immediately before and after the 2020 Beachie Creek fire in wes
         palette=palette,
     )
 
+Themes
+~~~~~~
+
+Custom and built-in themes can be used to customize the appearance of Sankey diagrams. :meth:`datasets.Dataset.sankify` and :func:`sankify` 
+both accept a :code:`theme` parameter that can be used to specify the name of a built-in theme (see :code:`sankee.themes.THEMES.keys()`) or 
+a custom :class:`Theme` object.
+
+.. autoclass:: Theme
+    :members:

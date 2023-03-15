@@ -36,7 +36,7 @@ def sankify(
     scale: Union[None, int] = None,
     seed: int = 0,
     label_type: Union[None, str] = "class",
-    theme: Union[str, themes.Theme] = themes.DEFAULT,
+    theme: Union[str, themes.Theme] = "default",
 ) -> go.Figure:
     """
     Generate an interactive Sankey plot showing land cover change over time from a series of images.
@@ -80,9 +80,9 @@ def sankify(
         Selecting "class" will use the class label, "percent" will use the proportion of sampled
         pixels in each class, and "count" will use the number of sampled pixels in each class.
         False will disable link labels.
-    theme : str or themes.Theme
+    theme : str or Theme
         The theme to apply to the Sankey diagram. Can be the name of a built-in theme (e.g. "d3") or
-        a custom `sankee.themes.Theme` object.
+        a custom `sankee.Theme` object.
 
     Returns
     -------
