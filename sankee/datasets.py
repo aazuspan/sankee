@@ -231,7 +231,7 @@ class CCAP_Dataset(Dataset):
 
 LCMS_LU = LCMS_Dataset(
     name="LCMS LU - Land Change Monitoring System Land Use",
-    id="USFS/GTAC/LCMS/v2021-7",
+    id="USFS/GTAC/LCMS/v2022-8",
     band="Land_Use",
     labels={
         1: "Agriculture",
@@ -251,14 +251,14 @@ LCMS_LU = LCMS_Dataset(
         6: "#c2b34a",
         7: "#1B1716",
     },
-    years=tuple(range(1985, 2022)),
+    years=tuple(range(1985, 2023)),
     nodata=7,
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
 LCMS_LC = LCMS_Dataset(
     name="LCMS LC - Land Change Monitoring System Land Cover",
-    id="USFS/GTAC/LCMS/v2021-7",
+    id="USFS/GTAC/LCMS/v2022-8",
     band="Land_Cover",
     labels={
         1: "Trees",
@@ -294,7 +294,7 @@ LCMS_LC = LCMS_Dataset(
         14: "#4780f3",
         15: "#1B1716",
     },
-    years=tuple(range(1985, 2022)),
+    years=tuple(range(1985, 2023)),
     nodata=15,
 )
 
@@ -663,7 +663,7 @@ LCMAP = Dataset(
         7: "#FFFFFF",
         8: "#B3B0A3",
     },
-    years=tuple(range(1985, 2021)),
+    years=tuple(range(1985, 2022)),
 )
 
 CORINE = Dataset(

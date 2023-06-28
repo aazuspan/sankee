@@ -18,14 +18,14 @@ def test_get_year_nlcd():
 def test_get_year_LCMS_LC():
     dataset = sankee.datasets.LCMS_LC
     img = dataset.get_year(2016)
-    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2021-7/LCMS_CONUS_v2021-7_2016"
+    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2022-8/LCMS_CONUS_v2022-8_2016"
     assert img.bandNames().getInfo() == [dataset.band]
 
 
 def test_get_year_LCMS_LU():
     dataset = sankee.datasets.LCMS_LU
     img = dataset.get_year(2016)
-    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2021-7/LCMS_CONUS_v2021-7_2016"
+    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2022-8/LCMS_CONUS_v2022-8_2016"
     assert img.bandNames().getInfo() == [dataset.band]
 
 
@@ -66,7 +66,7 @@ def test_get_year_LCMAP():
     img = dataset.get_year(2016)
     assert (
         img.get("system:id").getInfo()
-        == "projects/sat-io/open-datasets/LCMAP/LCPRI/LCMAP_CU_2016_V12_LCPRI"
+        == "projects/sat-io/open-datasets/LCMAP/LCPRI/LCMAP_CU_2016_V13_LCPRI"
     )
     assert img.bandNames().getInfo() == [dataset.band]
 
@@ -80,9 +80,9 @@ def test_get_year_CORINE():
     assert img.bandNames().getInfo() == [dataset.band]
 
 
-def test_years():
-    for dataset in sankee.datasets.datasets:
-        assert dataset.years == tuple(dataset.list_years().getInfo())
+@pytest.mark.parametrize("dataset", sankee.datasets.datasets, ids=lambda d: d.name)
+def test_years(dataset):
+    assert dataset.years == tuple(dataset.list_years().getInfo())
 
 
 def test_get_unsupported_year():
