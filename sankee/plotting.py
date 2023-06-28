@@ -150,13 +150,15 @@ class SankeyPlot(widgets.DOMWidget):
     def get_sorted_classes(self) -> pd.Series:
         """Return all unique class values, sorted by the total number of observations."""
         start_count = (
-            self.df.groupby("source")
+            self.df.loc[:, ["source", "total"]]
+            .groupby("source")
             .mean()
             .reset_index()[["source", "total"]]
             .rename(columns={"source": "class", "total": "count"})
         )
         end_count = (
-            self.df.groupby("target")
+            self.df.loc[:, ["target", "changed"]]
+            .groupby("target")
             .sum()
             .reset_index()[["target", "changed"]]
             .rename(columns={"target": "class", "changed": "count"})
