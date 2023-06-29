@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 import itertools
 from collections import Counter
-from typing import List
 
 import ee
 import ipywidgets as widgets
@@ -16,7 +17,7 @@ def pairwise(iterable):
     return zip(a, b)
 
 
-def get_shared_bands(images: List[ee.Image]) -> List[str]:
+def get_shared_bands(images: list[ee.Image]) -> list[str]:
     """Get the list of bands that are shared by all images in the list.
 
     Args:

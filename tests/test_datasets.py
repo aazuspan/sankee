@@ -1,4 +1,3 @@
-import ee
 import pytest
 from numpy.testing import assert_equal
 from pandas.testing import assert_series_equal

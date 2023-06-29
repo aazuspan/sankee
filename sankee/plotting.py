@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 from collections import namedtuple
-from typing import Dict, List, Union
 
 import ee
 import ipywidgets as widgets
@@ -24,19 +25,19 @@ SankeyParameters = namedtuple(
 
 
 def sankify(
-    image_list: List[ee.Image],
+    image_list: list[ee.Image],
     band: str,
-    labels: Dict[int, str],
-    palette: Dict[int, str],
-    region: Union[None, ee.Geometry] = None,
-    label_list: Union[None, List[str]] = None,
-    max_classes: Union[None, int] = None,
+    labels: dict[int, str],
+    palette: dict[int, str],
+    region: None | ee.Geometry = None,
+    label_list: None | list[str] = None,
+    max_classes: None | int = None,
     n: int = 500,
-    title: Union[None, str] = None,
-    scale: Union[None, int] = None,
+    title: None | str = None,
+    scale: None | int = None,
     seed: int = 0,
-    label_type: Union[None, str] = "class",
-    theme: Union[str, themes.Theme] = "default",
+    label_type: None | str = "class",
+    theme: str | themes.Theme = "default",
 ) -> go.Figure:
     """
     Generate an interactive Sankey plot showing land cover change over time from a series of images.
@@ -126,12 +127,12 @@ class SankeyPlot(widgets.DOMWidget):
     def __init__(
         self,
         data: pd.DataFrame,
-        labels: Dict[int, str],
-        palette: Dict[int, str],
+        labels: dict[int, str],
+        palette: dict[int, str],
         title: str,
         samples: ee.FeatureCollection,
         label_type: str,
-        theme: Union[str, themes.Theme],
+        theme: str | themes.Theme,
     ):
         self.data = data
         self.labels = labels

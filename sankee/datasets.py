@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from __future__ import annotations
 
 import ee
 import pandas as pd
@@ -14,10 +14,10 @@ class Dataset:
         name: str,
         id: str,
         band: str,
-        labels: Dict[int, str],
-        palette: Dict[int, str],
-        years: List[int],
-        nodata: Union[None, int] = None,
+        labels: dict[int, str],
+        palette: dict[int, str],
+        years: list[int],
+        nodata: None | int = None,
     ):
         """
         Parameters
@@ -52,7 +52,7 @@ class Dataset:
         return f"<Dataset: {self.name}>"
 
     @property
-    def keys(self) -> List[int]:
+    def keys(self) -> list[int]:
         """Return the label keys of the dataset."""
         return list(self.labels.keys())
 
@@ -103,16 +103,16 @@ class Dataset:
 
     def sankify(
         self,
-        years: List[int],
+        years: list[int],
         region: ee.Geometry,
-        max_classes: Union[None, int] = None,
+        max_classes: None | int = None,
         n: int = 500,
-        title: Union[str, None] = None,
-        scale: Union[int, None] = None,
+        title: str | None = None,
+        scale: int | None = None,
         seed: int = 0,
         exclude: None = None,
         label_type: str = "class",
-        theme: Union[str, themes.Theme] = themes.DEFAULT,
+        theme: str | themes.Theme = themes.DEFAULT,
     ) -> go.Figure:
         """
         Generate an interactive Sankey plot showing land cover change over time from a series of

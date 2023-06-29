@@ -1,4 +1,4 @@
-from typing import List, Tuple, Union
+from __future__ import annotations
 
 import ee
 import pandas as pd
@@ -8,16 +8,16 @@ from sankee import utils
 
 def generate_sample_data(
     *,
-    image_list: List[ee.Image],
-    image_labels: List[str],
+    image_list: list[ee.Image],
+    image_labels: list[str],
     region: ee.Geometry,
     band: str,
     n: int = 500,
-    scale: Union[None, int] = None,
+    scale: None | int = None,
     seed: int = 0,
-    include: Union[None, List[int]] = None,
-    max_classes: Union[None, int] = None,
-) -> Tuple[pd.DataFrame, ee.FeatureCollection]:
+    include: None | list[int] = None,
+    max_classes: None | int = None,
+) -> tuple[pd.DataFrame, ee.FeatureCollection]:
     """Take a list of images extract image values to each to random points. The image values will be
     stored in a property based on the image label. Then, the samples will be returned as a formated
     dataframe with one column for each image and one row for each sample point.
@@ -60,7 +60,7 @@ def generate_sample_data(
     # EE data gets sorted alpha, so re-sort columns to the image order. Run this after the column
     # check because this can add columns that were missing.
     data = data.reindex(image_labels, axis=1)
-    
+
     if include is not None:
         data = data[data.isin(include).all(axis=1)]
 

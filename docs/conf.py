@@ -15,13 +15,14 @@ import sys
 
 sys.path.insert(0, os.path.abspath(".."))
 
+from sankee import __version__
 
 # -- Project information -----------------------------------------------------
 
 project = "sankee"
 copyright = "2021, Aaron Zuspan"
 author = "Aaron Zuspan"
-version = "v0.2.4"
+version = __version__
 
 
 # -- General configuration ---------------------------------------------------
