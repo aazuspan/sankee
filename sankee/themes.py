@@ -1,4 +1,4 @@
-from typing import Dict, Union
+from __future__ import annotations
 
 
 class Theme:
@@ -53,12 +53,11 @@ class Theme:
 
     def __init__(
         self,
-        label_style: Union[None, str] = None,
-        title_style: Union[None, str] = None,
-        node_kwargs: Union[None, Dict] = None,
-        link_kwargs: Union[None, Dict] = None,
+        label_style: None | str = None,
+        title_style: None | str = None,
+        node_kwargs: None | dict = None,
+        link_kwargs: None | dict = None,
     ):
-
         self.label_style = label_style
         self.title_style = title_style
         self.node_kwargs = node_kwargs if node_kwargs is not None else {}

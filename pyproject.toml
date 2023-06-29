@@ -1,0 +1,76 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sankee"
+dynamic = ["version"]
+description = "Visualize classified time series data with interactive Sankey plots in Google Earth Engine."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    { name = "Aaron Zuspan", email = "aazuspan@gmail.com" },
+]
+keywords = [
+    "earth-engine",
+    "sankey",
+    "land-cover",
+    "visualization",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: GIS",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "earthengine-api>=0.1.230",
+    "numpy",
+    "pandas",
+    "plotly>=5.2.2",
+    "ipywidgets"
+]
+
+[project.urls]
+Homepage = "https://github.com/aazuspan/sankee"
+Source = "https://github.com/aazuspan/sankee"
+
+[tool.hatch.version]
+path = "sankee/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["sankee"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pre-commit"
+]
+
+[tool.hatch.envs.docs]
+dependences = [
+    "nbsphinx",
+    "sphinx",
+    "sphinx_rtd_theme",
+]
+
+[tool.hatch.envs.docs.scripts]
+build = "sphinx-build -b html docs docs/_build/html"
+view = "python -m webbrowser -t docs/_build/html/index.html"
+
+
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.hatch.envs.test.scripts]
+all = "pytest . {args}"
+coverage = "pytest . --cov=sankee {args}"
+view-coverage = "python -m webbrowser -t htmlcov/index.html"
