@@ -74,3 +74,8 @@ dependencies = [
 all = "pytest . {args}"
 coverage = "pytest . --cov=sankee {args}"
 view-coverage = "python -m webbrowser -t htmlcov/index.html"
+
+[tool.ruff]
+select = ["E", "F", "I", "UP", "B", "PT", "NPY", "PERF", "RUF"]
+exclude = ["docs/"]
+target-version = "py38"
