@@ -7,7 +7,7 @@ import sankee
 from .data import TEST_DATA, TEST_DATASET
 
 
-@pytest.fixture
+@pytest.fixture()
 def sankey():
     """Generate a SankeyPlot for testing."""
     return sankee.plotting.SankeyPlot(
