@@ -80,6 +80,7 @@ select = ["E", "F", "I", "UP", "B", "PT", "NPY", "PERF", "RUF"]
 exclude = ["docs/"]
 fix = true
 show-fixes = true
+line-length = 100
 
 [tool.ruff.isort]
 known-first-party = ["sankee"]
