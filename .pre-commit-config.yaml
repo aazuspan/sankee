@@ -1,12 +1,6 @@
 repos:
-- repo: https://github.com/psf/black
-  rev: 23.3.0
-  hooks:
-  -   id: black
-      args: [--line-length=100]
-
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.0.275
-  hooks:
-    - id: ruff
-      args: [--fix, --line-length=100]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.4
+    hooks:
+      - id: ruff
+      - id: ruff-format
