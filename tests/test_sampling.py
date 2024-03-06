@@ -49,13 +49,13 @@ def test_sample_data_bad_region():
         )
 
 
-def test_sample_data_point():
+def test_sample_empty_collection():
     """Test that an error is thrown when sampling occurs on an empty FeatureCollection."""
-    with pytest.raises(ValueError, match="pass a 2D `region`"):
+    with pytest.raises(ValueError, match="region is empty"):
         sankee.sampling.generate_sample_data(
             image_list=TEST_IMAGE_LIST,
             image_labels=TEST_IMAGE_LABELS,
-            region=ee.Geometry.Point([0, 0]),
+            region=ee.FeatureCollection([]),
             band=TEST_DATASET.band,
             scale=100,
         )
