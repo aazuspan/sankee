@@ -6,6 +6,30 @@ import pandas as pd
 from sankee import utils
 
 
+class SamplingError(ValueError):
+    """Error related to data sampling in Earth Engine."""
+
+
+def handle_sampling_error(e: ee.EEException, band: str, image_list: list[ee.Image]) -> None:
+    """Handle Earth Engine errors that occur during sampling by raising more specific errors."""
+    msg = None
+
+    if band in str(e):
+        shared_bands = utils.get_shared_bands(image_list)
+        msg = f"The band `{band}` was not found in all images. Choose from {shared_bands}."
+
+    elif "Region must not be empty" in str(e):
+        msg = (
+            "The sample region is empty. Make sure to pass a valid geometry, feature, or "
+            "non-empty collection."
+        )
+
+    if msg:
+        raise SamplingError(msg) from None
+
+    raise e
+
+
 def generate_sample_data(
     *,
     image_list: list[ee.Image],
@@ -38,21 +62,13 @@ def generate_sample_data(
     try:
         features = [feat["properties"] for feat in samples.toList(samples.size()).getInfo()]
     except ee.EEException as e:
-        if band in str(e):
-            shared_bands = utils.get_shared_bands(image_list)
-            raise ValueError(
-                f"The band `{band}` was not found in all images. Choose from " f"{shared_bands}"
-            ) from None
-        elif "'count' must be positive" in str(e):
-            raise ValueError("No points were sampled. Make sure to pass a 2D `region`.") from None
-        else:
-            raise e
+        handle_sampling_error(e, band, image_list)
 
     data = pd.DataFrame.from_dict(features).dropna().astype(int)
 
     for image in image_labels:
         if image not in data.columns:
-            raise ValueError(
+            raise SamplingError(
                 f"Valid samples were not found for image `{image}`. Check that the"
                 " image overlaps the sampling region."
             )

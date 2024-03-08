@@ -264,7 +264,7 @@ class SankeyPlot(widgets.DOMWidget):
             .rename(columns={0: "changed"})
         )
         # Count the total number of source samples in each year
-        df["total"] = df.groupby(["source_year", "source"]).changed.transform(sum)
+        df["total"] = df.groupby(["source_year", "source"]).changed.transform("sum")
         # Calculate what percent of the source samples went into each target class
         df["proportion"] = df["changed"] / df["total"]
 
@@ -312,7 +312,7 @@ class SankeyPlot(widgets.DOMWidget):
             button.toggle()
 
             class_name = button.tooltip
-            class_id = [key for key in self.labels.keys() if self.labels[key] == class_name][0]
+            class_id = next(key for key in self.labels.keys() if self.labels[key] == class_name)
 
             if not button.state:
                 self.hide.append(class_id)
