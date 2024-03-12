@@ -38,7 +38,7 @@ def sankify(
     seed: int = 0,
     label_type: None | str = "class",
     theme: str | themes.Theme = "default",
-) -> go.Figure:
+) -> SankeyPlot:
     """
     Generate an interactive Sankey plot showing land cover change over time from a series of images.
 
@@ -87,8 +87,8 @@ def sankify(
 
     Returns
     -------
-    plotly.graph_objs._figure.Figure
-        An interactive Sankey plot.
+    SankeyPlot
+        An interactive Sankey plot widget.
     """
     if region is None:
         region = image_list[0].geometry()

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import ee
 import pandas as pd
-import plotly.graph_objects as go
 
 from sankee import themes
-from sankee.plotting import sankify
+from sankee.plotting import SankeyPlot, sankify
 
 
 class Dataset:
@@ -113,7 +112,7 @@ class Dataset:
         exclude: None = None,
         label_type: str = "class",
         theme: str | themes.Theme = themes.DEFAULT,
-    ) -> go.Figure:
+    ) -> SankeyPlot:
         """
         Generate an interactive Sankey plot showing land cover change over time from a series of
         years in the dataset.
@@ -124,11 +123,6 @@ class Dataset:
             The years to include in the plot. Select at least two unique years.
         region : ee.Geometry
             A region to generate samples within. The region must overlap all images.
-        exclude : list[int], default None
-            An optional list of pixel values to exclude from the plot. Excluded values must be raw
-            pixel values rather than class labels. This can be helpful if the region is dominated by
-            one or more unchanging classes and the goal is to visualize changes in smaller classes.
-            No-data classes are always excluded automatically.
         max_classes : int, default None
             If a value is provided, small classes will be removed until max_classes remain. Class
             size is calculated based on total times sampled in the time series.
@@ -150,11 +144,14 @@ class Dataset:
             Selecting "class" will use the class label, "percent" will use the proportion of
             sampled pixels in each class, and "count" will use the number of sampled pixels in each
             class.
+        theme : str or Theme
+            The theme to apply to the Sankey diagram. Can be the name of a built-in theme
+            (e.g. "d3") or a custom `sankee.Theme` object.
 
         Returns
         -------
-        plotly.graph_objs._figure.Figure
-            An interactive Sankey plot.
+        SankeyPlot
+            An interactive Sankey plot widget.
         """
         if len(years) < 2:
             raise ValueError("Select at least two years.")
