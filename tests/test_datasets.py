@@ -81,7 +81,8 @@ def test_get_year_CORINE():
 
 @pytest.mark.parametrize("dataset", sankee.datasets.datasets, ids=lambda d: d.name)
 def test_years(dataset):
-    assert dataset.years == tuple(dataset.list_years().getInfo())
+    """Check that the hard-coded dataset years match the Earth Engine catalog years."""
+    assert dataset.years == tuple(dataset._list_years().getInfo())
 
 
 def test_get_unsupported_year():
@@ -117,8 +118,8 @@ def test_sankify():
         title="My plot!",
     )
 
-    params1 = sankey1.generate_plot_parameters()
-    params2 = sankey2.generate_plot_parameters()
+    params1 = sankey1._generate_plot_parameters()
+    params2 = sankey2._generate_plot_parameters()
 
     for p1, p2 in zip(params1, params2):
         assert_series_equal(p1, p2)

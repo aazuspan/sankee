@@ -23,12 +23,12 @@ def sankey():
 
 def test_get_sorted_classes(sankey):
     """Test that classes are correctly sorted."""
-    assert_series_equal(sankey.get_sorted_classes(), pd.Series([1, 2, 4, 3]), check_names=False)
+    assert_series_equal(sankey._get_sorted_classes(), pd.Series([1, 2, 4, 3]), check_names=False)
 
 
 def test_plot_parameters(sankey):
     """Test that plot parameters are generated correctly."""
-    params = sankey.generate_plot_parameters()
+    params = sankey._generate_plot_parameters()
     node_labels = ["start", "start", "start", "end", "end", "end", "end"]
     label = [
         "Agriculture",

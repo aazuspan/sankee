@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import namedtuple
+from typing import Literal
 
 import ee
 import ipywidgets as widgets
@@ -36,7 +37,7 @@ def sankify(
     title: None | str = None,
     scale: None | int = None,
     seed: int = 0,
-    label_type: None | str = "class",
+    label_type: None | Literal["class", "percent", "count"] = "class",
     theme: str | themes.Theme = "default",
 ) -> SankeyPlot:
     """
@@ -77,10 +78,10 @@ def sankify(
     seed : int, default 0
         The seed value used to generate repeatable results during random sampling.
     label_type : str, default "class"
-        The type of label to display for each link, one of "class", "percent", "count", or False.
+        The type of label to display for each link, one of "class", "percent", "count", or None.
         Selecting "class" will use the class label, "percent" will use the proportion of sampled
         pixels in each class, and "count" will use the number of sampled pixels in each class.
-        False will disable link labels.
+        None will disable link labels.
     theme : str or Theme
         The theme to apply to the Sankey diagram. Can be the name of a built-in theme (e.g. "d3") or
         a custom `sankee.Theme` object.
@@ -126,12 +127,13 @@ def sankify(
 class SankeyPlot(widgets.DOMWidget):
     def __init__(
         self,
+        *,
         data: pd.DataFrame,
         labels: dict[int, str],
         palette: dict[int, str],
         title: str,
         samples: ee.FeatureCollection,
-        label_type: str,
+        label_type: None | Literal["class", "percent", "count"],
         theme: str | themes.Theme,
     ):
         self.data = data
@@ -145,10 +147,10 @@ class SankeyPlot(widgets.DOMWidget):
         self.hide = []
         # Initialized by `self.generate_plot`
         self.df = None
-        self.plot = self.generate_plot()
-        self.gui = self.generate_gui()
+        self.plot = self._generate_plot()
+        self.gui = self._generate_gui()
 
-    def get_sorted_classes(self) -> pd.Series:
+    def _get_sorted_classes(self) -> pd.Series:
         """Return all unique class values, sorted by the total number of observations."""
         start_count = (
             self.df.loc[:, ["source", "total"]]
@@ -168,11 +170,11 @@ class SankeyPlot(widgets.DOMWidget):
 
         return total_count.sort_values(by="count", ascending=False)["class"].reset_index(drop=True)
 
-    def get_active_classes(self) -> pd.Series:
+    def _get_active_classes(self) -> pd.Series:
         """Return all unique active, visibile class values after filtering."""
         return self.df[["source", "target"]].melt().value.unique()
 
-    def generate_plot_parameters(self) -> SankeyParameters:
+    def _generate_plot_parameters(self) -> SankeyParameters:
         """Generate Sankey plot parameters from a formatted, cleaned dataframe"""
         df = self.df.copy()
 
@@ -226,7 +228,7 @@ class SankeyPlot(widgets.DOMWidget):
             all_classes["label"] = ""
         else:
             raise ValueError(
-                "Invalid label_type. Choose from 'class', 'percent', 'count', or False."
+                "Invalid label_type. Choose from 'class', 'percent', 'count', or None."
             )
 
         return SankeyParameters(
@@ -240,7 +242,7 @@ class SankeyPlot(widgets.DOMWidget):
             value=df.changed,
         )
 
-    def generate_dataframe(self) -> pd.DataFrame:
+    def _generate_dataframe(self) -> pd.DataFrame:
         """Convert raw sampling data to a formatted dataframe"""
         data = self.data.copy()
 
@@ -299,14 +301,15 @@ class SankeyPlot(widgets.DOMWidget):
         return self.gui._model_id
 
     def update_layout(self, *args, **kwargs):
-        """Pass layout changes to the plot. This is primarily kept for compatibility with geemap."""
+        """Pass layout changes to the plot."""
+        # This is primarily kept for compatibility with geemap
         self.plot.update_layout(*args, **kwargs)
 
-    def generate_gui(self):
+    def _generate_gui(self):
         BUTTON_HEIGHT = "24px"
         BUTTON_WIDTH = "24px"
 
-        unique_classes = self.get_sorted_classes()
+        unique_classes = self._get_sorted_classes()
 
         def toggle_button(button):
             button.toggle()
@@ -323,12 +326,12 @@ class SankeyPlot(widgets.DOMWidget):
 
         def update_plot():
             """Swap new data into the plot"""
-            new_plot = self.generate_plot()
+            new_plot = self._generate_plot()
             self.plot.data[0].link = new_plot.data[0].link
             self.plot.data[0].node = new_plot.data[0].node
 
         buttons = []
-        active_classes = self.get_active_classes()
+        active_classes = self._get_active_classes()
         for i in unique_classes:
             label = self.labels[i]
             on_color = self.palette[i]
@@ -373,9 +376,9 @@ class SankeyPlot(widgets.DOMWidget):
 
         return gui
 
-    def generate_plot(self) -> go.Figure:
-        self.df = self.generate_dataframe()
-        params = self.generate_plot_parameters()
+    def _generate_plot(self) -> go.Figure:
+        self.df = self._generate_dataframe()
+        params = self._generate_plot_parameters()
 
         theme = (
             self.theme if isinstance(self.theme, themes.Theme) else themes.load_theme(self.theme)
