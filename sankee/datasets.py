@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from warnings import warn
+
 import ee
 import pandas as pd
 
@@ -75,14 +77,14 @@ class Dataset:
             )
 
         img = self.collection.filterDate(str(year), str(year + 1)).first()
-        img = self.set_visualization_properties(img)
+        img = self._set_visualization_properties(img)
 
         if self.nodata is not None:
             img = img.updateMask(img.neq(self.nodata))
 
         return img.select(self.band)
 
-    def set_visualization_properties(self, image: ee.Image) -> ee.Image:
+    def _set_visualization_properties(self, image: ee.Image) -> ee.Image:
         """Set the properties used by Earth Engine to automatically assign a palette to an image
         from this dataset."""
         return image.set(
@@ -92,7 +94,7 @@ class Dataset:
             [c.replace("#", "") for c in self.palette.values()],
         )
 
-    def list_years(self) -> ee.List:
+    def _list_years(self) -> ee.List:
         """Get an ee.List of all years in the collection."""
         return (
             self.collection.aggregate_array("system:time_start")
@@ -137,8 +139,6 @@ class Dataset:
             projection.
         seed : int, default 0
             The seed value used to generate repeatable results during random sampling.
-        exclude : None
-            Unused parameter that will be removed in a future release.
         label_type : str, default "class"
             The type of label to display for each link, one of "class", "percent", or "count".
             Selecting "class" will use the class label, "percent" will use the proportion of
@@ -153,6 +153,12 @@ class Dataset:
         SankeyPlot
             An interactive Sankey plot widget.
         """
+        if exclude is not None:
+            warn(
+                "The `exclude` parameter is unused and will be removed in a future release.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         if len(years) < 2:
             raise ValueError("Select at least two years.")
         if len(set(years)) != len(years):
@@ -184,7 +190,7 @@ class Dataset:
         )
 
 
-class LCMS_Dataset(Dataset):
+class _LCMS_Dataset(Dataset):
     def get_year(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. LCMS splits up each year into two images: CONUS
         and SEAK. This merges those into a single image."""
@@ -200,7 +206,7 @@ class LCMS_Dataset(Dataset):
         return merged
 
 
-class CCAP_Dataset(Dataset):
+class _CCAP_Dataset(Dataset):
     def get_year(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. C-CAP splits up each year into multiple images,
         so merge those and set the class value and palette metadata to allow automatic
@@ -221,12 +227,12 @@ class CCAP_Dataset(Dataset):
             .setDefaultProjection("EPSG:5070")
         )
 
-        img = self.set_visualization_properties(img)
+        img = self._set_visualization_properties(img)
 
         return img
 
 
-LCMS_LU = LCMS_Dataset(
+LCMS_LU = _LCMS_Dataset(
     name="LCMS LU - Land Change Monitoring System Land Use",
     id="USFS/GTAC/LCMS/v2022-8",
     band="Land_Use",
@@ -253,7 +259,7 @@ LCMS_LU = LCMS_Dataset(
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
-LCMS_LC = LCMS_Dataset(
+LCMS_LC = _LCMS_Dataset(
     name="LCMS LC - Land Change Monitoring System Land Cover",
     id="USFS/GTAC/LCMS/v2022-8",
     band="Land_Cover",
@@ -535,7 +541,7 @@ CGLS_LC100 = Dataset(
 )
 
 # https://samapriya.github.io/awesome-gee-community-datasets/projects/ccap_mlc/
-CCAP_LC30 = CCAP_Dataset(
+CCAP_LC30 = _CCAP_Dataset(
     name="C-CAP - NOAA Coastal Change Analysis Program 30m",
     id="projects/sat-io/open-datasets/NOAA/ccap_30m",
     band="b1",
