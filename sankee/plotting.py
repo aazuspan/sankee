@@ -142,12 +142,12 @@ class SankeyPlot(widgets.DOMWidget):
         self.title = title
         self.samples = samples
         self.label_type = label_type
-        self.theme = theme
+        self.theme = theme if isinstance(theme, themes.Theme) else themes.load_theme(theme)
 
         self.hide = []
         # Initialized by `self.generate_plot`
         self.df = None
-        self.plot = self._generate_plot()
+        self.plot = self._generate_figurewidget()
         self.gui = self._generate_gui()
 
     def _get_sorted_classes(self) -> pd.Series:
@@ -325,10 +325,10 @@ class SankeyPlot(widgets.DOMWidget):
             update_plot()
 
         def update_plot():
-            """Swap new data into the plot"""
-            new_plot = self._generate_plot()
-            self.plot.data[0].link = new_plot.data[0].link
-            self.plot.data[0].node = new_plot.data[0].node
+            """Swap new data into the plot."""
+            new_sankey = self._generate_sankey()
+            self.plot.data[0].link = new_sankey.link
+            self.plot.data[0].node = new_sankey.node
 
         buttons = []
         active_classes = self._get_active_classes()
@@ -376,18 +376,20 @@ class SankeyPlot(widgets.DOMWidget):
 
         return gui
 
-    def _generate_plot(self) -> go.Figure:
+    def _generate_sankey(self) -> go.Figure:
+        """Generate the Sankey plot based on the currently visible classes."""
         self.df = self._generate_dataframe()
-        params = self._generate_plot_parameters()
+        # Explicitly return an empty Sankey plot if all classes are hidden to avoid widget update
+        # errors.
+        if len(self.df) == 0:
+            return go.Sankey()
 
-        theme = (
-            self.theme if isinstance(self.theme, themes.Theme) else themes.load_theme(self.theme)
-        )
+        params = self._generate_plot_parameters()
 
         node_kwargs = dict(
             customdata=params.node_labels,
             hovertemplate="<b>%{customdata}</b><extra></extra>",
-            label=[f"<span style='{theme.label_style}'>{s}</span>" for s in params.label],
+            label=[f"<span style='{self.theme.label_style}'>{s}</span>" for s in params.label],
             color=params.node_palette,
         )
         link_kwargs = dict(
@@ -399,18 +401,18 @@ class SankeyPlot(widgets.DOMWidget):
             hovertemplate="%{customdata} <extra></extra>",
         )
 
-        fig = go.FigureWidget(
-            data=[
-                go.Sankey(
-                    arrangement="snap",
-                    node={**node_kwargs, **theme.node_kwargs},
-                    link={**link_kwargs, **theme.link_kwargs},
-                )
-            ]
+        return go.Sankey(
+            arrangement="snap",
+            node={**node_kwargs, **self.theme.node_kwargs},
+            link={**link_kwargs, **self.theme.link_kwargs},
         )
 
+    def _generate_figurewidget(self) -> go.FigureWidget:
+        """Generate the FigureWidget that wraps the Sankey plot."""
+        fig = go.FigureWidget(data=[self._generate_sankey()])
+
         fig.update_layout(
-            title_text=f"<span style='{theme.title_style}'>{self.title}</span>"
+            title_text=f"<span style='{self.theme.title_style}'>{self.title}</span>"
             if self.title
             else None,
             font_size=16,
