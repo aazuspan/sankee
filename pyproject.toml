@@ -34,9 +34,8 @@ dependencies = [
     "earthengine-api>=0.1.230",
     "numpy",
     "pandas",
-    "plotly>=5.2.2",
+    "plotly>=5.2.2,<6.0",
     "ipywidgets",
-    "anywidget",
 ]
 
 [project.urls]
