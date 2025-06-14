@@ -1,8 +1,11 @@
+import re
+
 import pytest
 from numpy.testing import assert_equal
 from pandas.testing import assert_series_equal
 
 import sankee
+from sankee.sampling import ImageUnavailableError
 
 from .data import TEST_REGION
 
@@ -88,8 +91,10 @@ def test_years(dataset):
 
 
 def test_get_unsupported_year():
-    with pytest.raises(ValueError, match="does not include year"):
-        sankee.datasets.NLCD.get_year(2017)
+    """Test that unsupported years raise when the plot is generated."""
+    expected = re.escape("This dataset does not include the year(s) [1850, 2150]")
+    with pytest.raises(ImageUnavailableError, match=expected):
+        sankee.datasets.NLCD.sankify(years=[1850, 2150], region=TEST_REGION, n=1)
 
 
 def test_get_invalid_years():

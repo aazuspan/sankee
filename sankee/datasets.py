@@ -7,6 +7,7 @@ import pandas as pd
 
 from sankee import themes
 from sankee.plotting import SankeyPlot, sankify
+from sankee.sampling import ImageUnavailableError
 
 
 class Dataset:
@@ -71,11 +72,6 @@ class Dataset:
 
     def get_year(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. Set the metadata properties for visualization."""
-        if year not in self.years:
-            raise ValueError(
-                f"This dataset does not include year `{year}`. Choose from {self.years}."
-            )
-
         img = self.collection.filterDate(str(year), str(year + 1)).first()
         img = self._set_visualization_properties(img)
 
@@ -173,21 +169,34 @@ class Dataset:
             labels.pop(self.nodata)
             palette.pop(self.nodata)
 
-        return sankify(
-            image_list=imgs,
-            label_list=years,
-            labels=labels,
-            band=self.band,
-            palette=palette,
-            region=region,
-            max_classes=max_classes,
-            n=n,
-            title=title,
-            scale=scale,
-            seed=seed,
-            label_type=label_type,
-            theme=theme,
-        )
+        try:
+            return sankify(
+                image_list=imgs,
+                label_list=years,
+                labels=labels,
+                band=self.band,
+                palette=palette,
+                region=region,
+                max_classes=max_classes,
+                n=n,
+                title=title,
+                scale=scale,
+                seed=seed,
+                label_type=label_type,
+                theme=theme,
+            )
+        except ImageUnavailableError as e:
+            # Note that we handle missing years as a runtime error rather than validating against
+            # the dataset years, since the list may be outdated.
+            missing_years = set(years) - set(self.years)
+            if missing_years:
+                raise ImageUnavailableError(
+                    f"This dataset does not include the year(s) {sorted(list(missing_years))}. "
+                    f"Choose from {list(self.years)}."
+                ) from None
+
+            # If the error is unrelated to a missing year, re-raise it
+            raise e
 
 
 class _LCMS_Dataset(Dataset):
