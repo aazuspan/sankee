@@ -17,14 +17,16 @@ def test_get_year_nlcd():
 def test_get_year_LCMS_LC():
     dataset = sankee.datasets.LCMS_LC
     img = dataset.get_year(2016)
-    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2022-8/LCMS_CONUS_v2022-8_2016"
+    # AK and CONUS are mosaiced and properties are copied from the first image
+    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2024-10/LCMS_AK_v2024-10_2016"
     assert img.bandNames().getInfo() == [dataset.band]
 
 
 def test_get_year_LCMS_LU():
     dataset = sankee.datasets.LCMS_LU
     img = dataset.get_year(2016)
-    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2022-8/LCMS_CONUS_v2022-8_2016"
+    # AK and CONUS are mosaiced and properties are copied from the first image
+    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2024-10/LCMS_AK_v2024-10_2016"
     assert img.bandNames().getInfo() == [dataset.band]
 
 
@@ -44,7 +46,7 @@ def test_get_year_MODIS():
 
     for dataset in datasets:
         img = dataset.get_year(2016)
-        assert img.get("system:id").getInfo() == "MODIS/006/MCD12Q1/2016_01_01"
+        assert img.get("system:id").getInfo() == "MODIS/061/MCD12Q1/2016_01_01"
         assert img.bandNames().getInfo() == [dataset.band]
 
 
@@ -96,6 +98,16 @@ def test_get_invalid_years():
         sankee.datasets.LCMS_LU.sankify(years=[2017], region=None)
     with pytest.raises(ValueError, match="Duplicate years"):
         sankee.datasets.LCMS_LU.sankify(years=[2017, 2017, 2018], region=None)
+
+
+@pytest.mark.parametrize("dataset", sankee.datasets.datasets, ids=lambda d: d.name)
+def test_nodata_is_valid(dataset):
+    """Check that the nodata value, if present, has corresponding label and palette entries."""
+    if dataset.nodata is not None:
+        assert dataset.nodata in dataset.labels, f"The nodata value {dataset.nodata} has no label."
+        assert (
+            dataset.nodata in dataset.palette
+        ), f"The nodata value {dataset.nodata} has no palette."
 
 
 def test_sankify():

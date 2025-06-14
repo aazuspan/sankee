@@ -33,28 +33,28 @@ def test_plot_parameters(sankey):
     label = [
         "Agriculture",
         "Developed",
-        "Non-Forest Wetland",
+        "Other",
         "Agriculture",
         "Developed",
         "Forest",
-        "Non-Forest Wetland",
+        "Other",
     ]
     link_labels = [
         "<b>100%</b> of <b>Agriculture</b> remained <b>Agriculture</b>",
         "<b>50%</b> of <b>Developed</b> remained <b>Developed</b>",
         "<b>50%</b> of <b>Developed</b> became <b>Forest</b>",
-        "<b>100%</b> of <b>Non-Forest Wetland</b> remained <b>Non-Forest Wetland</b>",
+        "<b>100%</b> of <b>Other</b> remained <b>Other</b>",
     ]
     node_palette = [
         "#efff6b",
         "#ff2ff8",
-        "#97ffff",
+        "#a1a1a1",
         "#efff6b",
         "#ff2ff8",
         "#1b9d0c",
-        "#97ffff",
+        "#a1a1a1",
     ]
-    link_palette = ["#efff6b", "#ff2ff8", "#ff2ff8", "#97ffff"]
+    link_palette = ["#efff6b", "#ff2ff8", "#ff2ff8", "#a1a1a1"]
     source = [0, 1, 1, 2]
     target = [3, 4, 5, 6]
     value = [3, 1, 1, 1]

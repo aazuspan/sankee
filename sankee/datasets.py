@@ -193,7 +193,7 @@ class Dataset:
 class _LCMS_Dataset(Dataset):
     def get_year(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. LCMS splits up each year into two images: CONUS
-        and SEAK. This merges those into a single image."""
+        and AK. This merges those into a single image."""
         super().get_year(year)
 
         collection = self.collection.filter(ee.Filter.eq("year", year))
@@ -234,34 +234,32 @@ class _CCAP_Dataset(Dataset):
 
 LCMS_LU = _LCMS_Dataset(
     name="LCMS LU - Land Change Monitoring System Land Use",
-    id="USFS/GTAC/LCMS/v2022-8",
+    id="USFS/GTAC/LCMS/v2024-10",
     band="Land_Use",
     labels={
         1: "Agriculture",
         2: "Developed",
         3: "Forest",
-        4: "Non-Forest Wetland",
-        5: "Other",
-        6: "Rangeland or Pasture",
-        7: "No Data",
+        4: "Other",
+        5: "Rangeland or Pasture",
+        6: "No Data",
     },
     palette={
         1: "#efff6b",
         2: "#ff2ff8",
         3: "#1b9d0c",
-        4: "#97ffff",
-        5: "#a1a1a1",
-        6: "#c2b34a",
-        7: "#1B1716",
+        4: "#a1a1a1",
+        5: "#c2b34a",
+        6: "#1B1716",
     },
-    years=tuple(range(1985, 2023)),
-    nodata=7,
+    years=tuple(range(1985, 2025)),
+    nodata=6,
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5
 LCMS_LC = _LCMS_Dataset(
     name="LCMS LC - Land Change Monitoring System Land Cover",
-    id="USFS/GTAC/LCMS/v2022-8",
+    id="USFS/GTAC/LCMS/v2024-10",
     band="Land_Cover",
     labels={
         1: "Trees",
@@ -297,7 +295,7 @@ LCMS_LC = _LCMS_Dataset(
         14: "#4780f3",
         15: "#1B1716",
     },
-    years=tuple(range(1985, 2023)),
+    years=tuple(range(1985, 2025)),
     nodata=15,
 )
 
@@ -360,7 +358,7 @@ NLCD2016 = NLCD
 
 MODIS_LC_TYPE1 = Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 1",
-    id="MODIS/006/MCD12Q1",
+    id="MODIS/061/MCD12Q1",
     band="LC_Type1",
     labels={
         1: "Evergreen conifer forest",
@@ -400,13 +398,13 @@ MODIS_LC_TYPE1 = Dataset(
         16: "#f9ffa4",
         17: "#1c0dff",
     },
-    years=tuple(range(2001, 2021)),
+    years=tuple(range(2001, 2024)),
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
 MODIS_LC_TYPE2 = Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 2",
-    id="MODIS/006/MCD12Q1",
+    id="MODIS/061/MCD12Q1",
     band="LC_Type2",
     labels={
         0: "Water",
@@ -444,13 +442,13 @@ MODIS_LC_TYPE2 = Dataset(
         14: "#ff6d4c",
         15: "#f9ffa4",
     },
-    years=tuple(range(2001, 2021)),
+    years=tuple(range(2001, 2024)),
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
 MODIS_LC_TYPE3 = Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 3",
-    id="MODIS/006/MCD12Q1",
+    id="MODIS/061/MCD12Q1",
     band="LC_Type3",
     labels={
         0: "Water",
@@ -478,7 +476,7 @@ MODIS_LC_TYPE3 = Dataset(
         9: "#f9ffa4",
         10: "#a5a5a5",
     },
-    years=tuple(range(2001, 2021)),
+    years=tuple(range(2001, 2024)),
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_Landcover_100m_Proba-V-C3_Global
@@ -638,7 +636,7 @@ CA_FOREST_LC = Dataset(
         220: "#00cc00",
         230: "#cc9900",
     },
-    years=tuple(range(1984, 2020)),
+    years=tuple(range(1984, 2023)),
     nodata=0,
 )
 
