@@ -253,7 +253,7 @@ LCMS_LU = _LCMS_Dataset(
         6: "#1B1716",
     },
     years=tuple(range(1985, 2025)),
-    nodata=7,
+    nodata=6,
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_LCMS_v2020-5

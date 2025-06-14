@@ -100,6 +100,16 @@ def test_get_invalid_years():
         sankee.datasets.LCMS_LU.sankify(years=[2017, 2017, 2018], region=None)
 
 
+@pytest.mark.parametrize("dataset", sankee.datasets.datasets, ids=lambda d: d.name)
+def test_nodata_is_valid(dataset):
+    """Check that the nodata value, if present, has corresponding label and palette entries."""
+    if dataset.nodata is not None:
+        assert dataset.nodata in dataset.labels, f"The nodata value {dataset.nodata} has no label."
+        assert (
+            dataset.nodata in dataset.palette
+        ), f"The nodata value {dataset.nodata} has no palette."
+
+
 def test_sankify():
     """Make sure that sankify returns the same results whether called directly or from a Dataset."""
     dataset = sankee.datasets.LCMS_LC
