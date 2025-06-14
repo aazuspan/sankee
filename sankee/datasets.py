@@ -358,7 +358,7 @@ NLCD2016 = NLCD
 
 MODIS_LC_TYPE1 = Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 1",
-    id="MODIS/006/MCD12Q1",
+    id="MODIS/061/MCD12Q1",
     band="LC_Type1",
     labels={
         1: "Evergreen conifer forest",
@@ -398,13 +398,13 @@ MODIS_LC_TYPE1 = Dataset(
         16: "#f9ffa4",
         17: "#1c0dff",
     },
-    years=tuple(range(2001, 2021)),
+    years=tuple(range(2001, 2024)),
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
 MODIS_LC_TYPE2 = Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 2",
-    id="MODIS/006/MCD12Q1",
+    id="MODIS/061/MCD12Q1",
     band="LC_Type2",
     labels={
         0: "Water",
@@ -442,13 +442,13 @@ MODIS_LC_TYPE2 = Dataset(
         14: "#ff6d4c",
         15: "#f9ffa4",
     },
-    years=tuple(range(2001, 2021)),
+    years=tuple(range(2001, 2024)),
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_006_MCD12Q1
 MODIS_LC_TYPE3 = Dataset(
     name="MCD12Q1 - MODIS Global Land Cover Type 3",
-    id="MODIS/006/MCD12Q1",
+    id="MODIS/061/MCD12Q1",
     band="LC_Type3",
     labels={
         0: "Water",
@@ -476,7 +476,7 @@ MODIS_LC_TYPE3 = Dataset(
         9: "#f9ffa4",
         10: "#a5a5a5",
     },
-    years=tuple(range(2001, 2021)),
+    years=tuple(range(2001, 2024)),
 )
 
 # https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_Landcover_100m_Proba-V-C3_Global

@@ -46,7 +46,7 @@ def test_get_year_MODIS():
 
     for dataset in datasets:
         img = dataset.get_year(2016)
-        assert img.get("system:id").getInfo() == "MODIS/006/MCD12Q1/2016_01_01"
+        assert img.get("system:id").getInfo() == "MODIS/061/MCD12Q1/2016_01_01"
         assert img.bandNames().getInfo() == [dataset.band]
 
 
