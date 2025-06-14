@@ -17,14 +17,16 @@ def test_get_year_nlcd():
 def test_get_year_LCMS_LC():
     dataset = sankee.datasets.LCMS_LC
     img = dataset.get_year(2016)
-    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2022-8/LCMS_CONUS_v2022-8_2016"
+    # AK and CONUS are mosaiced and properties are copied from the first image
+    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2024-10/LCMS_AK_v2024-10_2016"
     assert img.bandNames().getInfo() == [dataset.band]
 
 
 def test_get_year_LCMS_LU():
     dataset = sankee.datasets.LCMS_LU
     img = dataset.get_year(2016)
-    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2022-8/LCMS_CONUS_v2022-8_2016"
+    # AK and CONUS are mosaiced and properties are copied from the first image
+    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2024-10/LCMS_AK_v2024-10_2016"
     assert img.bandNames().getInfo() == [dataset.band]
 
 
