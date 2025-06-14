@@ -10,10 +10,6 @@ class SamplingError(ValueError):
     """Error related to data sampling in Earth Engine."""
 
 
-class ImageUnavailableError(SamplingError):
-    """Error raised when an image is unavailable for sampling."""
-
-
 def handle_sampling_error(e: ee.EEException, band: str, image_list: list[ee.Image]) -> None:
     """Handle Earth Engine errors that occur during sampling by raising more specific errors."""
     msg = None
@@ -27,9 +23,6 @@ def handle_sampling_error(e: ee.EEException, band: str, image_list: list[ee.Imag
             "The sample region is empty. Make sure to pass a valid geometry, feature, or "
             "non-empty collection."
         )
-
-    elif "'object' is required and may not be null" in str(e):
-        raise ImageUnavailableError("One or more of the selected images are unavailable.") from None
 
     if msg:
         raise SamplingError(msg) from None
