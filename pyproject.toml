@@ -28,13 +28,14 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
     "earthengine-api>=0.1.230",
     "numpy",
     "pandas",
-    "plotly>=5.2.2",
-    "ipywidgets"
+    "plotly>=5.2.2,<6.0",
+    "ipywidgets",
 ]
 
 [project.urls]
