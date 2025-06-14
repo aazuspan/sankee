@@ -7,7 +7,6 @@ import pandas as pd
 
 from sankee import themes
 from sankee.plotting import SankeyPlot, sankify
-from sankee.sampling import ImageUnavailableError
 
 
 class Dataset:
@@ -70,11 +69,18 @@ class Dataset:
         """The :code:`ee.ImageCollection` representing the dataset."""
         return ee.ImageCollection(self.id)
 
+    def _fetch_year_image(self, year: int) -> ee.Image:
+        """
+        Get one year's image from the dataset.
+
+        Datasets that don't store one time-stamped image per year should override this method.
+        """
+        return self.collection.filterDate(str(year), str(year + 1)).first()
+
     def get_year(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. Set the metadata properties for visualization."""
-        img = self.collection.filterDate(str(year), str(year + 1)).first()
+        img = self._fetch_year_image(year)
         img = self._set_visualization_properties(img)
-
         if self.nodata is not None:
             img = img.updateMask(img.neq(self.nodata))
 
@@ -185,12 +191,12 @@ class Dataset:
                 label_type=label_type,
                 theme=theme,
             )
-        except ImageUnavailableError as e:
+        except Exception as e:
             # Note that we handle missing years as a runtime error rather than validating against
             # the dataset years, since the list may be outdated.
             missing_years = set(years) - set(self.years)
             if missing_years:
-                raise ImageUnavailableError(
+                raise ValueError(
                     f"This dataset does not include the year(s) {sorted(list(missing_years))}. "
                     f"Choose from {list(self.years)}."
                 ) from None
@@ -200,45 +206,19 @@ class Dataset:
 
 
 class _LCMS_Dataset(Dataset):
-    def get_year(self, year: int) -> ee.Image:
+    def _fetch_year_image(self, year: int) -> ee.Image:
         """Get one year's image from the dataset. LCMS splits up each year into two images: CONUS
         and AK. This merges those into a single image."""
-        super().get_year(year)
-
         collection = self.collection.filter(ee.Filter.eq("year", year))
-        merged = collection.mosaic().select(self.band).clip(collection.geometry())
-
-        props = collection.first().propertyNames().remove("study_area")
-        merged = ee.Image(ee.Element.copyProperties(merged, collection.first(), props))
-
-        merged = merged.setDefaultProjection("EPSG:5070")
-        return merged
+        return collection.mosaic().clip(collection.geometry()).setDefaultProjection("EPSG:5070")
 
 
 class _CCAP_Dataset(Dataset):
-    def get_year(self, year: int) -> ee.Image:
-        """Get one year's image from the dataset. C-CAP splits up each year into multiple images,
-        so merge those and set the class value and palette metadata to allow automatic
-        visualization."""
-        super().get_year(year)
-
-        imgs = self.collection.filterDate(str(year), str(year + 1))
-
-        img = (
-            imgs.mosaic()
-            .set(
-                {
-                    "system:time_start": imgs.first().get("system:time_start"),
-                    "system:time_end": imgs.first().get("system:time_end"),
-                }
-            )
-            .clip(imgs.geometry())
-            .setDefaultProjection("EPSG:5070")
-        )
-
-        img = self._set_visualization_properties(img)
-
-        return img
+    def _fetch_year_image(self, year: int) -> ee.Image:
+        """Get one year's image from the dataset. C-CAP splits up each year into multiple images.
+        This merges those into a single image."""
+        collection = self.collection.filterDate(str(year), str(year + 1))
+        return collection.mosaic().clip(collection.geometry()).setDefaultProjection("EPSG:5070")
 
 
 LCMS_LU = _LCMS_Dataset(

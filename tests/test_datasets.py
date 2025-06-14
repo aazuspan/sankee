@@ -5,7 +5,6 @@ from numpy.testing import assert_equal
 from pandas.testing import assert_series_equal
 
 import sankee
-from sankee.sampling import ImageUnavailableError
 
 from .data import TEST_REGION
 
@@ -20,16 +19,12 @@ def test_get_year_nlcd():
 def test_get_year_LCMS_LC():
     dataset = sankee.datasets.LCMS_LC
     img = dataset.get_year(2016)
-    # AK and CONUS are mosaiced and properties are copied from the first image
-    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2024-10/LCMS_AK_v2024-10_2016"
     assert img.bandNames().getInfo() == [dataset.band]
 
 
 def test_get_year_LCMS_LU():
     dataset = sankee.datasets.LCMS_LU
     img = dataset.get_year(2016)
-    # AK and CONUS are mosaiced and properties are copied from the first image
-    assert img.get("system:id").getInfo() == "USFS/GTAC/LCMS/v2024-10/LCMS_AK_v2024-10_2016"
     assert img.bandNames().getInfo() == [dataset.band]
 
 
@@ -93,7 +88,7 @@ def test_years(dataset):
 def test_get_unsupported_year():
     """Test that unsupported years raise when the plot is generated."""
     expected = re.escape("This dataset does not include the year(s) [1850, 2150]")
-    with pytest.raises(ImageUnavailableError, match=expected):
+    with pytest.raises(ValueError, match=expected):
         sankee.datasets.NLCD.sankify(years=[1850, 2150], region=TEST_REGION, n=1)
 
 
