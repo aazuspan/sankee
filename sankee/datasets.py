@@ -638,7 +638,7 @@ CA_FOREST_LC = Dataset(
         220: "#00cc00",
         230: "#cc9900",
     },
-    years=tuple(range(1984, 2020)),
+    years=tuple(range(1984, 2023)),
     nodata=0,
 )
 
