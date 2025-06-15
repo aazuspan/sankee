@@ -75,3 +75,115 @@ def test_update_layout(sankey):
 
     assert sankey.plot.layout.width == 128
     assert sankey.plot.layout.height == 256
+
+
+def test_duplicate_classes_merged():
+    """Test that classes with identical labels and colors are merged together."""
+    data = pd.DataFrame(
+        {
+            "start": [1, 1, 1, 2, 2, 4],
+            "end": [1, 1, 1, 2, 3, 4],
+        }
+    )
+
+    # The labels and palette combine classes 2, 3, and 4 into a single class "Class B"
+    labels = {
+        1: "Class A",
+        2: "Class B",
+        3: "Class B",
+        4: "Class B",
+    }
+    palette = {
+        1: "#ff0000",
+        2: "#00ff00",
+        3: "#00ff00",
+        4: "#00ff00",
+    }
+
+    plot = sankee.plotting.SankeyPlot(
+        data=data,
+        labels=labels,
+        palette=palette,
+        title="",
+        samples=None,
+        label_type="class",
+        theme="default",
+    )
+
+    # Classes 3 and 4 should be merged into class 2
+    assert plot.data["start"].tolist() == [1, 1, 1, 2, 2, 2]
+    assert plot.data["end"].tolist() == [1, 1, 1, 2, 2, 2]
+    # The duplicated classes should be merged to just two observations
+    assert len(plot.df) == 2
+    # The correct class labels should be used
+    assert plot.df["source_label"].tolist() == ["Class A", "Class B"]
+
+
+def test_duplicate_labels_not_merged():
+    """Test that classes with duplicated labels but distinct colors are preserved."""
+    data = pd.DataFrame(
+        {
+            "start": [1, 1, 1, 2, 2, 4],
+            "end": [1, 1, 1, 2, 3, 4],
+        }
+    )
+
+    # Same labels for classes 2, 3, and 4, but different colors
+    labels = {
+        1: "Class A",
+        2: "Class B",
+        3: "Class B",
+        4: "Class B",
+    }
+    palette = {
+        1: "#ff0000",
+        2: "#00ff00",
+        3: "#008300",
+        4: "#809c80",
+    }
+    plot = sankee.plotting.SankeyPlot(
+        data=data,
+        labels=labels,
+        palette=palette,
+        title="",
+        samples=None,
+        label_type="class",
+        theme="default",
+    )
+    assert plot.data["start"].tolist() == [1, 1, 1, 2, 2, 4]
+    assert plot.data["end"].tolist() == [1, 1, 1, 2, 3, 4]
+
+
+def test_duplicate_colors_not_merged():
+    """Test that classes with duplicated labels but distinct colors are preserved."""
+    data = pd.DataFrame(
+        {
+            "start": [1, 1, 1, 2, 2, 4],
+            "end": [1, 1, 1, 2, 3, 4],
+        }
+    )
+
+    # Same colors for classes 2, 3, and 4, but different labels
+    labels = {
+        1: "Class A",
+        2: "Class B",
+        3: "Class C",
+        4: "Class D",
+    }
+    palette = {
+        1: "#ff0000",
+        2: "#00ff00",
+        3: "#00ff00",
+        4: "#00ff00",
+    }
+    plot = sankee.plotting.SankeyPlot(
+        data=data,
+        labels=labels,
+        palette=palette,
+        title="",
+        samples=None,
+        label_type="class",
+        theme="default",
+    )
+    assert plot.data["start"].tolist() == [1, 1, 1, 2, 2, 4]
+    assert plot.data["end"].tolist() == [1, 1, 1, 2, 3, 4]
