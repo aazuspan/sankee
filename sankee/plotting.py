@@ -136,9 +136,8 @@ class SankeyPlot(widgets.DOMWidget):
         label_type: None | Literal["class", "percent", "count"],
         theme: str | themes.Theme,
     ):
-        self.data = data
-        self.labels = labels
-        self.palette = palette
+        self.data, self.labels, self.palette = self._merge_duplicate_classes(data, labels, palette)
+
         self.title = title
         self.samples = samples
         self.label_type = label_type
@@ -149,6 +148,34 @@ class SankeyPlot(widgets.DOMWidget):
         self.df = None
         self.plot = self._generate_figurewidget()
         self.gui = self._generate_gui()
+
+    def _merge_duplicate_classes(self, data, labels, palette):
+        """
+        Combine classes with duplicated labels and colors into a single class.
+
+        This allows classes that are distinct in the sampled image to be aggregated at the plotting
+        stage, which is more efficient.
+        """
+        # A mapping of (color, label) to the first sampled value associated with that pair.
+        running_map: dict[tuple[str, str], int] = {}
+        remap: dict[int, int] = {}
+
+        # If a label-color pair is repeated with different values, remap the values to the first
+        # occurrence of that label-color pair.
+        for key, label, color in zip(labels.keys(), labels.values(), palette.values()):
+            if (color, label) in running_map:
+                prev_key = running_map[(color, label)]
+                remap[key] = prev_key
+            else:
+                running_map[(color, label)] = key
+
+        # Grab the distinct color and label with their associated value
+        palette = {v: k[0] for k, v in running_map.items()}
+        labels = {v: k[1] for k, v in running_map.items()}
+        # Apply the value remapping to merge classes
+        data = data.replace(remap)
+
+        return data, labels, palette
 
     def _get_sorted_classes(self) -> pd.Series:
         """Return all unique class values, sorted by the total number of observations."""
