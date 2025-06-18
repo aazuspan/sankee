@@ -338,6 +338,110 @@ class _GLC_FCS30D_Dataset(Dataset):
             .map(lambda year: ee.Number.parse(ee.String(year).split("_").get(1)))
         )
 
+    def sankify(
+        self,
+        years: list[int],
+        region: ee.Geometry,
+        max_classes: None | int = None,
+        n: int = 500,
+        title: str | None = None,
+        scale: int | None = 30,
+        seed: int = 0,
+        exclude: None = None,
+        label_type: str = "class",
+        theme: str | themes.Theme = themes.DEFAULT,
+    ) -> SankeyPlot:
+        """
+        Generate an interactive Sankey plot showing land cover change over time from a series of
+        years in the dataset.
+
+        Change from parent class
+        ------------------------
+        The nominal scale of the images cause a sampling error. Set the defualt scale to 30 and allow users to adjust it if needed.
+
+        Parameters
+        ----------
+        years : List[int]
+            The years to include in the plot. Select at least two unique years.
+        region : ee.Geometry
+            A region to generate samples within. The region must overlap all images.
+        max_classes : int, default None
+            If a value is provided, small classes will be removed until max_classes remain. Class
+            size is calculated based on total times sampled in the time series.
+        n : int, default 500
+            The number of sample points to randomly generate for characterizing all images. More
+            samples will provide more representative data but will take longer to process.
+        title : str, default None
+            An optional title that will be displayed above the Sankey plot.
+        scale : int, default None
+            The scale in image units to perform sampling at. If none is provided, GEE will attempt
+            to use the image's nominal scale, which may cause errors depending on the image
+            projection.
+        seed : int, default 0
+            The seed value used to generate repeatable results during random sampling.
+        label_type : str, default "class"
+            The type of label to display for each link, one of "class", "percent", or "count".
+            Selecting "class" will use the class label, "percent" will use the proportion of
+            sampled pixels in each class, and "count" will use the number of sampled pixels in each
+            class.
+        theme : str or Theme
+            The theme to apply to the Sankey diagram. Can be the name of a built-in theme
+            (e.g. "d3") or a custom `sankee.Theme` object.
+
+        Returns
+        -------
+        SankeyPlot
+            An interactive Sankey plot widget.
+        """
+        if exclude is not None:
+            warn(
+                "The `exclude` parameter is unused and will be removed in a future release.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        if len(years) < 2:
+            raise ValueError("Select at least two years.")
+        if len(set(years)) != len(years):
+            raise ValueError("Duplicate years found. Make sure all years are unique.")
+        years = sorted(years)
+
+        imgs = [self.get_year(year) for year in years]
+
+        labels = self.labels.copy()
+        palette = self.palette.copy()
+        if self.nodata is not None:
+            labels.pop(self.nodata)
+            palette.pop(self.nodata)
+
+        try:
+            return sankify(
+                image_list=imgs,
+                label_list=years,
+                labels=labels,
+                band=self.band,
+                palette=palette,
+                region=region,
+                max_classes=max_classes,
+                n=n,
+                title=title,
+                scale=scale,
+                seed=seed,
+                label_type=label_type,
+                theme=theme,
+            )
+        except Exception as e:
+            # Note that we handle missing years as a runtime error rather than validating against
+            # the dataset years, since the list may be outdated.
+            missing_years = set(years) - set(self.years)
+            if missing_years:
+                raise ValueError(
+                    f"This dataset does not include the year(s) {sorted(list(missing_years))}. "
+                    f"Choose from {list(self.years)}."
+                ) from None
+
+            # If the error is unrelated to a missing year, re-raise it
+            raise e
+
 
 LCMS_LU = _LCMS_Dataset(
     name="LCMS LU - Land Change Monitoring System Land Use",
