@@ -214,11 +214,7 @@ class _LCMS_Dataset(Dataset):
         """Get one year's image from the dataset. LCMS splits up each year into two images: CONUS
         and AK. This merges those into a single image."""
         collection = self.collection.filter(ee.Filter.eq("year", year))
-        return (
-            collection.mosaic()
-            .clip(collection.geometry())
-            .setDefaultProjection("EPSG:5070")
-        )
+        return collection.mosaic().clip(collection.geometry()).setDefaultProjection("EPSG:5070")
 
 
 class _CCAP_Dataset(Dataset):
@@ -226,11 +222,7 @@ class _CCAP_Dataset(Dataset):
         """Get one year's image from the dataset. C-CAP splits up each year into multiple images.
         This merges those into a single image."""
         collection = self.collection.filterDate(str(year), str(year + 1))
-        return (
-            collection.mosaic()
-            .clip(collection.geometry())
-            .setDefaultProjection("EPSG:5070")
-        )
+        return collection.mosaic().clip(collection.geometry()).setDefaultProjection("EPSG:5070")
 
 
 class _GLC_FCS30D_Dataset(Dataset):
@@ -250,7 +242,8 @@ class _GLC_FCS30D_Dataset(Dataset):
         name : str
             The name of the dataset.
         id : dict
-            The dictionary of :code:`system:id`s of the two :code:`ee.ImageCollection`s representing the annual and five-yearly datasets.
+            The dictionary of :code:`system:id`s of the two :code:`ee.ImageCollection`s
+            representing the annual and five-yearly datasets.
             keys: five-year, annual
         band : str
             The name of the image band that contains class values.
@@ -265,7 +258,8 @@ class _GLC_FCS30D_Dataset(Dataset):
 
         Change from parent class
         ------------------------
-            GLC FCS30D uses 2 :code:`system:id`s, one for the annual dataset from 2000 to 2022 and one for the 5 yearly dataset from 1985 to 1995.
+            GLC FCS30D uses 2 :code:`system:id`s, one for the annual dataset from 2000 to 2022 and
+            one for the 5 yearly dataset from 1985 to 1995.
         """
         self.name = name
         self.id = id
@@ -285,162 +279,45 @@ class _GLC_FCS30D_Dataset(Dataset):
 
         Change from parent class
         ------------------------
-        GLC FCS30D uses 2 separate :code:`ee.ImageCollection`s. Each collection contains 2 images. Each image contains 1 band for each year of the dataset.
+        GLC FCS30D uses 2 separate :code:`ee.ImageCollection`s. Each collection contains 2 images.
+        Each image contains 1 band for each year of the dataset.
 
-        This function mosaics them, renames the bands to the corresponding years and combines them into a new image collection with 1 image for five-year bands and 1 for annual bands.
+        This function:
+            1. Mosaics them
+            2. Resets the projection to match the initial image
+            3. Renames the bands to the corresponding years
+            4. Combines all bands into 1 image
+            5. Returns an image collection with 1 image per year with `system:time_start` set to
+            Jan 1 of that year
         """
+        five_year = ee.ImageCollection(self.id["five_year"])
         five_year = (
-            ee.ImageCollection(self.id["five_year"])
-            .mosaic()
-            .rename(
-                ee.List.sequence(1985, 1995, 5).map(
-                    lambda x: ee.Number(x).format("%04d")
-                )
-            )
+            five_year.mosaic()
+            .setDefaultProjection(five_year.first().projection())
+            .rename(ee.List.sequence(1985, 1995, 5).map(lambda x: ee.Number(x).format("%04d")))
         )
 
+        annual = ee.ImageCollection(self.id["annual"])
         annual = (
-            ee.ImageCollection(self.id["annual"])
-            .mosaic()
-            .rename(
-                ee.List.sequence(2000, 2022).map(lambda x: ee.Number(x).format("%04d"))
-            )
+            annual.mosaic()
+            .setDefaultProjection(annual.first().projection())
+            .rename(ee.List.sequence(2000, 2022).map(lambda x: ee.Number(x).format("%04d")))
         )
 
-        return ee.ImageCollection([five_year, annual])
+        all_years = ee.Image.cat(five_year, annual)
 
-    def _fetch_year_image(self, year: int) -> ee.Image:
-        """
-        Returns a single :code:`ee.Image` with a single band named 'classes'.
-
-        GLC FCS30D uses 1 band for each year's data. Getting the data for a given year means selecting the appropriate band.
-
-        Flattening the :code:`ee.ImageCollection` 'collection' to a single image with :code:`ee.ImageCollection.toBands()` renames the bands with to '[image index]_[band name]'. The five-year dataset is index 0 and annual is index 1. The band is renamed to match the :code:`band` property.
-        """
-        if year < 2000:
-            band_name = "0_" + str(year)
-        else:
-            band_name = "1_" + str(year)
-
-        return self.collection.toBands().select(band_name).rename("classes")
-
-    def _list_years(self) -> ee.List:
-        """
-        Get an ee.List of all years in the collection.
-
-        Change from parent class
-        ------------------------
-        The list of years in GLC FCS30D is equivelant to the list of bands.
-        """
-        return (
-            self.collection.toBands()
-            .bandNames()
-            .map(lambda year: ee.Number.parse(ee.String(year).split("_").get(1)))
-        )
-
-    def sankify(
-        self,
-        years: list[int],
-        region: ee.Geometry,
-        max_classes: None | int = None,
-        n: int = 500,
-        title: str | None = None,
-        scale: int | None = 30,
-        seed: int = 0,
-        exclude: None = None,
-        label_type: str = "class",
-        theme: str | themes.Theme = themes.DEFAULT,
-    ) -> SankeyPlot:
-        """
-        Generate an interactive Sankey plot showing land cover change over time from a series of
-        years in the dataset.
-
-        Change from parent class
-        ------------------------
-        The nominal scale of the images cause a sampling error. Set the defualt scale to 30 and allow users to adjust it if needed.
-
-        Parameters
-        ----------
-        years : List[int]
-            The years to include in the plot. Select at least two unique years.
-        region : ee.Geometry
-            A region to generate samples within. The region must overlap all images.
-        max_classes : int, default None
-            If a value is provided, small classes will be removed until max_classes remain. Class
-            size is calculated based on total times sampled in the time series.
-        n : int, default 500
-            The number of sample points to randomly generate for characterizing all images. More
-            samples will provide more representative data but will take longer to process.
-        title : str, default None
-            An optional title that will be displayed above the Sankey plot.
-        scale : int, default None
-            The scale in image units to perform sampling at. If none is provided, GEE will attempt
-            to use the image's nominal scale, which may cause errors depending on the image
-            projection.
-        seed : int, default 0
-            The seed value used to generate repeatable results during random sampling.
-        label_type : str, default "class"
-            The type of label to display for each link, one of "class", "percent", or "count".
-            Selecting "class" will use the class label, "percent" will use the proportion of
-            sampled pixels in each class, and "count" will use the number of sampled pixels in each
-            class.
-        theme : str or Theme
-            The theme to apply to the Sankey diagram. Can be the name of a built-in theme
-            (e.g. "d3") or a custom `sankee.Theme` object.
-
-        Returns
-        -------
-        SankeyPlot
-            An interactive Sankey plot widget.
-        """
-        if exclude is not None:
-            warn(
-                "The `exclude` parameter is unused and will be removed in a future release.",
-                DeprecationWarning,
-                stacklevel=2,
+        def bands_to_imgs(band_name: str) -> ee.Image:
+            """
+            Mapper to rename the band to classes and set `system:start_time` to Jan 1 of that
+            year
+            """
+            return (
+                all_years.select([band_name])
+                .rename(["classes"])
+                .set({"system:time_start": ee.Date(band_name)})
             )
-        if len(years) < 2:
-            raise ValueError("Select at least two years.")
-        if len(set(years)) != len(years):
-            raise ValueError("Duplicate years found. Make sure all years are unique.")
-        years = sorted(years)
 
-        imgs = [self.get_year(year) for year in years]
-
-        labels = self.labels.copy()
-        palette = self.palette.copy()
-        if self.nodata is not None:
-            labels.pop(self.nodata)
-            palette.pop(self.nodata)
-
-        try:
-            return sankify(
-                image_list=imgs,
-                label_list=years,
-                labels=labels,
-                band=self.band,
-                palette=palette,
-                region=region,
-                max_classes=max_classes,
-                n=n,
-                title=title,
-                scale=scale,
-                seed=seed,
-                label_type=label_type,
-                theme=theme,
-            )
-        except Exception as e:
-            # Note that we handle missing years as a runtime error rather than validating against
-            # the dataset years, since the list may be outdated.
-            missing_years = set(years) - set(self.years)
-            if missing_years:
-                raise ValueError(
-                    f"This dataset does not include the year(s) {sorted(list(missing_years))}. "
-                    f"Choose from {list(self.years)}."
-                ) from None
-
-            # If the error is unrelated to a missing year, re-raise it
-            raise e
+        return ee.ImageCollection(all_years.bandNames().map(bands_to_imgs))
 
 
 LCMS_LU = _LCMS_Dataset(
@@ -979,7 +856,10 @@ CORINE = Dataset(
 )
 
 GLC_FCS30D_FINE = _GLC_FCS30D_Dataset(
-    name="GLC_FCS30D - Global 30-meter Land Cover Change Dataset (1985-2022) - Fine Classification System",
+    name="""
+        GLC_FCS30D - Global 30-meter Land Cover Change Dataset (1985-2022)
+        - Fine Classification System
+        """,
     id={
         "five_year": "projects/sat-io/open-datasets/GLC-FCS30D/five-years-map",
         "annual": "projects/sat-io/open-datasets/GLC-FCS30D/annual",
@@ -1063,7 +943,10 @@ GLC_FCS30D_FINE = _GLC_FCS30D_Dataset(
 )
 
 GLC_FCS30D_LEVEL1 = _GLC_FCS30D_Dataset(
-    name="GLC_FCS30D - Global 30-meter Land Cover Change Dataset (1985-2022) - Level 1 Validation System",
+    name="""
+        GLC_FCS30D - Global 30-meter Land Cover Change Dataset (1985-2022)
+         - Level 1 Validation System
+        """,
     id={
         "five_year": "projects/sat-io/open-datasets/GLC-FCS30D/five-years-map",
         "annual": "projects/sat-io/open-datasets/GLC-FCS30D/annual",
@@ -1147,7 +1030,9 @@ GLC_FCS30D_LEVEL1 = _GLC_FCS30D_Dataset(
 )
 
 GLC_FCS30D_BASIC = _GLC_FCS30D_Dataset(
-    name="GLC_FCS30D - Global 30-meter Land Cover Change Dataset (1985-2022) - Basic Classification System",
+    name="""GLC_FCS30D - Global 30-meter Land Cover Change Dataset (1985-2022)
+        - Basic Classification System
+        """,
     id={
         "five_year": "projects/sat-io/open-datasets/GLC-FCS30D/five-years-map",
         "annual": "projects/sat-io/open-datasets/GLC-FCS30D/annual",
