@@ -61,7 +61,11 @@ class Dataset:
     def df(self) -> pd.DataFrame:
         """Return a Pandas dataframe describing the dataset parameters."""
         return pd.DataFrame(
-            {"id": self.keys, "label": self.labels.values(), "color": self.palette.values()}
+            {
+                "id": self.keys,
+                "label": self.labels.values(),
+                "color": self.palette.values(),
+            }
         )
 
     @property
@@ -219,6 +223,101 @@ class _CCAP_Dataset(Dataset):
         This merges those into a single image."""
         collection = self.collection.filterDate(str(year), str(year + 1))
         return collection.mosaic().clip(collection.geometry()).setDefaultProjection("EPSG:5070")
+
+
+class _GLC_FCS30D_Dataset(Dataset):
+    def __init__(
+        self,
+        name: str,
+        id: dict[str, str],
+        band: str,
+        labels: dict[int, str],
+        palette: dict[int, str],
+        years: list[int],
+        nodata: None | int = None,
+    ):
+        """
+        Parameters
+        ----------
+        name : str
+            The name of the dataset.
+        id : dict
+            The dictionary of :code:`system:id`s of the two :code:`ee.ImageCollection`s
+            representing the annual and five-yearly datasets.
+            keys: five-year, annual
+        band : str
+            The name of the image band that contains class values.
+        labels : dict
+            A dictionary matching class values to their corresponding labels.
+        palette : dict
+            A dictionary matching class values to their corresponding hex colors.
+        years : List[int]
+            All years available in this dataset.
+        nodata : int
+            An optional no-data value to automatically remove when plotting.
+
+        Change from parent class
+        ------------------------
+            GLC FCS30D uses 2 :code:`system:id`s, one for the annual dataset from 2000 to 2022 and
+            one for the 5 yearly dataset from 1985 to 1995.
+        """
+        self.name = name
+        self.id = id
+        self.band = band
+        self.labels = labels
+        self.palette = palette
+        self.years = years
+        self.nodata = nodata
+
+        if sorted(labels.keys()) != sorted(palette.keys()):
+            raise ValueError("Labels and palette must have the same keys.")
+
+    @property
+    def collection(self) -> ee.ImageCollection:
+        """
+        The :code:`ee.ImageCollection` representing the dataset.
+
+        Change from parent class
+        ------------------------
+        GLC FCS30D uses 2 separate :code:`ee.ImageCollection`s. Each collection contains 2 images.
+        Each image contains 1 band for each year of the dataset.
+
+        This function:
+            1. Mosaics them
+            2. Resets the projection to match the initial image
+            3. Renames the bands to the corresponding years
+            4. Combines all bands into 1 image
+            5. Returns an image collection with 1 image per year with `system:time_start` set to
+            Jan 1 of that year
+        """
+        five_year = ee.ImageCollection(self.id["five_year"])
+        five_year = (
+            five_year.mosaic()
+            .setDefaultProjection(five_year.first().projection())
+            .rename(ee.List.sequence(1985, 1995, 5).map(lambda x: ee.Number(x).format("%04d")))
+        )
+
+        annual = ee.ImageCollection(self.id["annual"])
+        annual = (
+            annual.mosaic()
+            .setDefaultProjection(annual.first().projection())
+            .rename(ee.List.sequence(2000, 2022).map(lambda x: ee.Number(x).format("%04d")))
+        )
+
+        all_years = ee.Image.cat(five_year, annual)
+
+        def bands_to_imgs(band_name: str) -> ee.Image:
+            """
+            Mapper to rename the band to classes and set `system:start_time` to Jan 1 of that
+            year
+            """
+            return (
+                all_years.select([band_name])
+                .rename(["classes"])
+                .set({"system:time_start": ee.Date(band_name)})
+            )
+
+        return ee.ImageCollection(all_years.bandNames().map(bands_to_imgs))
 
 
 LCMS_LU = _LCMS_Dataset(
@@ -756,6 +855,265 @@ CORINE = Dataset(
     years=(1986, 1999, 2005, 2011, 2017),
 )
 
+GLC_FCS30D_FINE = _GLC_FCS30D_Dataset(
+    name="""
+        GLC_FCS30D - Global 30-meter Land Cover Change Dataset (1985-2022)
+        - Fine Classification System
+        """,
+    id={
+        "five_year": "projects/sat-io/open-datasets/GLC-FCS30D/five-years-map",
+        "annual": "projects/sat-io/open-datasets/GLC-FCS30D/annual",
+    },
+    band="classes",
+    labels={
+        10: "Rainfed cropland",
+        11: "Herbaceous cover cropland",
+        12: "Tree or shrub cover cropland",
+        20: "Irrigated cropland",
+        51: "Closed evergreen broadleaved forest",
+        52: "Open evergreen broadleaved forest",
+        61: "Closed deciduous broadleaved forest",
+        62: "Open deciduous broadleaved forest",
+        71: "Closed evergreen needleleaved forest",
+        72: "Open evergreen needleleaved forest",
+        81: "Closed deciduous needleleaved forest",
+        82: "Open deciduous needleleaved forest",
+        91: "Closed mixed-leaf forest",
+        92: "Open mixed-leaf forest",
+        120: "Shrubland",
+        121: "Evergreen shrubland",
+        122: "Deciduous shrubland",
+        130: "Grassland",
+        140: "Lichens and mosses",
+        150: "Sparse vegetation",
+        152: "Sparse shrubland",
+        153: "Sparse herbaceous cover",
+        181: "Swamp",
+        182: "Marsh",
+        183: "Flooded flat",
+        184: "Saline",
+        185: "Mangrove",
+        186: "Salt marsh",
+        187: "Tidal flat",
+        190: "Impervious surface",
+        200: "Bare areas",
+        201: "Consolidated bare areas",
+        202: "Unconsolidated bare areas",
+        210: "Water body",
+        220: "Permanent snow and ice",
+    },
+    palette={
+        10: "#ffff64",
+        11: "#ffff64",
+        12: "#ffff00",
+        20: "#aaf0f0",
+        51: "#4c7300",
+        52: "#006400",
+        61: "#aac800",
+        62: "#00a000",
+        71: "#005000",
+        72: "#003c00",
+        81: "#286400",
+        82: "#285000",
+        91: "#a0b432",
+        92: "#788200",
+        120: "#966400",
+        121: "#964b00",
+        122: "#966400",
+        130: "#ffb432",
+        140: "#ffdcd2",
+        150: "#ffebaf",
+        152: "#ffd278",
+        153: "#ffebaf",
+        181: "#00a884",
+        182: "#73ffdf",
+        183: "#9ebbd7",
+        184: "#828282",
+        185: "#f57ab6",
+        186: "#66cdab",
+        187: "#444f89",
+        190: "#c31400",
+        200: "#fff5d7",
+        201: "#dcdcdc",
+        202: "#fff5d7",
+        210: "#0046c8",
+        220: "#ffffff",
+    },
+    years=tuple(range(1985, 2000, 5)) + tuple(range(2000, 2023)),
+)
+
+GLC_FCS30D_LEVEL1 = _GLC_FCS30D_Dataset(
+    name="""
+        GLC_FCS30D - Global 30-meter Land Cover Change Dataset (1985-2022)
+         - Level 1 Validation System
+        """,
+    id={
+        "five_year": "projects/sat-io/open-datasets/GLC-FCS30D/five-years-map",
+        "annual": "projects/sat-io/open-datasets/GLC-FCS30D/annual",
+    },
+    band="classes",
+    labels={
+        10: "Rainfed cropland",
+        11: "Rainfed cropland",
+        12: "Rainfed cropland",
+        20: "Irrigated cropland",
+        51: "Evergreen broadleaved forest",
+        52: "Evergreen broadleaved forest",
+        61: "Deciduous broadleaved forest",
+        62: "Deciduous broadleaved forest",
+        71: "Evergreen needleleaved forest",
+        72: "Evergreen needleleaved forest",
+        81: "Deciduous needleleaved forest",
+        82: "Deciduous needleleaved forest",
+        91: "Mixed-leaf forest",
+        92: "Mixed-leaf forest",
+        120: "Shrubland",
+        121: "Shrubland",
+        122: "Shrubland",
+        130: "Grassland",
+        140: "Lichens and mosses",
+        150: "Sparse vegetation",
+        152: "Sparse vegetation",
+        153: "Sparse vegetation",
+        181: "Inland wetland",
+        182: "Inland wetland",
+        183: "Inland wetland",
+        184: "Inland wetland",
+        185: "Coastal wetland",
+        186: "Coastal wetland",
+        187: "Coastal wetland",
+        190: "Impervious surface",
+        200: "Bare areas",
+        201: "Bare areas",
+        202: "Bare areas",
+        210: "Water body",
+        220: "Permanent snow and ice",
+    },
+    palette={
+        10: "#ffff64",
+        11: "#ffff64",
+        12: "#ffff64",
+        20: "#aaf0f0",
+        51: "#4c7300",
+        52: "#4c7300",
+        61: "#aac800",
+        62: "#aac800",
+        71: "#005000",
+        72: "#005000",
+        81: "#286400",
+        82: "#286400",
+        91: "#a0b432",
+        92: "#a0b432",
+        120: "#966400",
+        121: "#966400",
+        122: "#966400",
+        130: "#ffb432",
+        140: "#ffdcd2",
+        150: "#ffebaf",
+        152: "#ffebaf",
+        153: "#ffebaf",
+        181: "#00a884",
+        182: "#00a884",
+        183: "#00a884",
+        184: "#00a884",
+        185: "#f57ab6",
+        186: "#f57ab6",
+        187: "#f57ab6",
+        190: "#c31400",
+        200: "#fff5d7",
+        201: "#fff5d7",
+        202: "#fff5d7",
+        210: "#0046c8",
+        220: "#ffffff",
+    },
+    years=tuple(range(1985, 2000, 5)) + tuple(range(2000, 2023)),
+)
+
+GLC_FCS30D_BASIC = _GLC_FCS30D_Dataset(
+    name="""GLC_FCS30D - Global 30-meter Land Cover Change Dataset (1985-2022)
+        - Basic Classification System
+        """,
+    id={
+        "five_year": "projects/sat-io/open-datasets/GLC-FCS30D/five-years-map",
+        "annual": "projects/sat-io/open-datasets/GLC-FCS30D/annual",
+    },
+    band="classes",
+    labels={
+        10: "Cropland",
+        11: "Cropland",
+        12: "Cropland",
+        20: "Cropland",
+        51: "Forest",
+        52: "Forest",
+        61: "Forest",
+        62: "Forest",
+        71: "Forest",
+        72: "Forest",
+        81: "Forest",
+        82: "Forest",
+        91: "Forest",
+        92: "Forest",
+        120: "Shrubland",
+        121: "Shrubland",
+        122: "Shrubland",
+        130: "Grassland",
+        140: "Tundra",
+        150: "Bare areas",
+        152: "Bare areas",
+        153: "Bare areas",
+        181: "Wetland",
+        182: "Wetland",
+        183: "Wetland",
+        184: "Wetland",
+        185: "Wetland",
+        186: "Wetland",
+        187: "Wetland",
+        190: "Impervious surface",
+        200: "Bare areas",
+        201: "Bare areas",
+        202: "Bare areas",
+        210: "Water body",
+        220: "Permanent snow and ice",
+    },
+    palette={
+        10: "#ffff64",
+        11: "#ffff64",
+        12: "#ffff64",
+        20: "#ffff64",
+        51: "#4c7300",
+        52: "#4c7300",
+        61: "#4c7300",
+        62: "#4c7300",
+        71: "#4c7300",
+        72: "#4c7300",
+        81: "#4c7300",
+        82: "#4c7300",
+        91: "#4c7300",
+        92: "#4c7300",
+        120: "#966400",
+        121: "#966400",
+        122: "#966400",
+        130: "#ffb432",
+        140: "#ffdcd2",
+        150: "#ffebaf",
+        152: "#ffebaf",
+        153: "#ffebaf",
+        181: "#00a884",
+        182: "#00a884",
+        183: "#00a884",
+        184: "#00a884",
+        185: "#00a884",
+        186: "#00a884",
+        187: "#00a884",
+        190: "#c31400",
+        200: "#ffebaf",
+        201: "#ffebaf",
+        202: "#ffebaf",
+        210: "#0046c8",
+        220: "#ffffff",
+    },
+    years=tuple(range(1985, 2000, 5)) + tuple(range(2000, 2023)),
+)
 
 datasets = [
     LCMS_LC,
@@ -769,4 +1127,7 @@ datasets = [
     CA_FOREST_LC,
     LCMAP,
     CORINE,
+    GLC_FCS30D_FINE,
+    GLC_FCS30D_LEVEL1,
+    GLC_FCS30D_BASIC,
 ]

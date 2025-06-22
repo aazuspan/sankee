@@ -79,6 +79,18 @@ def test_get_year_CORINE():
     assert img.bandNames().getInfo() == [dataset.band]
 
 
+def test_get_year_GLC_FCS30D():
+    dataset_fine = sankee.datasets.GLC_FCS30D_FINE
+    dataset_level1 = sankee.datasets.GLC_FCS30D_LEVEL1
+    dataset_basic = sankee.datasets.GLC_FCS30D_BASIC
+    img_fine = dataset_fine.get_year(2011)
+    img_level1 = dataset_level1.get_year(2011)
+    img_basic = dataset_basic.get_year(2011)
+    assert img_fine.bandNames().getInfo() == [dataset_fine.band]
+    assert img_level1.bandNames().getInfo() == [dataset_level1.band]
+    assert img_basic.bandNames().getInfo() == [dataset_basic.band]
+
+
 @pytest.mark.parametrize("dataset", sankee.datasets.datasets, ids=lambda d: d.name)
 def test_years(dataset):
     """Check that the hard-coded dataset years match the Earth Engine catalog years."""
