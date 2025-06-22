@@ -54,7 +54,7 @@ dependencies = [
 ]
 
 [tool.hatch.envs.docs]
-dependences = [
+dependencies = [
     "nbsphinx",
     "sphinx",
     "sphinx_rtd_theme",
